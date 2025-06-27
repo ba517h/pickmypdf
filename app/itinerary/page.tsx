@@ -37,17 +37,23 @@ export default function ItineraryCreatorPage() {
     routing: "",
     tags: [],
     tripType: "",
+    mainImage: "",
+    cityImages: [],
     hotels: [],
     experiences: [],
     practicalInfo: {
       visa: "",
       currency: "",
-      tips: []
+      tips: [],
+      otherInclusions: []
     },
     dayWiseItinerary: [],
     withKids: "",
     withFamily: "",
-    offbeatSuggestions: ""
+    offbeatSuggestions: "",
+    withKidsImage: "",
+    withFamilyImage: "",
+    offbeatImage: ""
   });
 
   const form = useForm<ItineraryFormData>({

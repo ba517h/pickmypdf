@@ -1,17 +1,44 @@
 import { z } from "zod";
 
+// Schema for city images
+const CityImageSchema = z.object({
+  city: z.string(),
+  image: z.string().optional(),
+});
+
+// Schema for other inclusions with images
+const InclusionSchema = z.object({
+  name: z.string(),
+  description: z.string().optional(),
+  image: z.string().optional(),
+});
+
 // Schema for practical information
 const PracticalInfoSchema = z.object({
   visa: z.string(),
   currency: z.string(),
   tips: z.array(z.string()),
+  otherInclusions: z.array(InclusionSchema).optional(),
 });
 
-// Schema for day-wise itinerary items
+// Schema for hotels with images
+const HotelSchema = z.object({
+  name: z.string(),
+  image: z.string().optional(),
+});
+
+// Schema for experiences with images
+const ExperienceSchema = z.object({
+  name: z.string(),
+  image: z.string().optional(),
+});
+
+// Schema for day-wise itinerary items with images
 const DayWiseItemSchema = z.object({
   day: z.number(),
   title: z.string(),
   content: z.string(),
+  image: z.string().optional(),
 });
 
 // Main ItineraryFormData schema
@@ -23,10 +50,16 @@ export const ItineraryFormDataSchema = z.object({
   routing: z.string(),
   tags: z.array(z.string()),
   tripType: z.string(),
+  
+  // Main itinerary image
+  mainImage: z.string().optional(),
+  
+  // City-level images
+  cityImages: z.array(CityImageSchema).optional(),
 
   // Step 2: Highlights
-  hotels: z.array(z.string()),
-  experiences: z.array(z.string()),
+  hotels: z.array(HotelSchema),
+  experiences: z.array(ExperienceSchema),
   practicalInfo: PracticalInfoSchema,
 
   // Step 3: Day-wise Itinerary
@@ -36,6 +69,11 @@ export const ItineraryFormDataSchema = z.object({
   withKids: z.string(),
   withFamily: z.string(),
   offbeatSuggestions: z.string(),
+  
+  // Step 4: Optional Block Images
+  withKidsImage: z.string().optional(),
+  withFamilyImage: z.string().optional(),
+  offbeatImage: z.string().optional(),
 });
 
 // Request schemas for different input types

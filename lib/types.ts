@@ -8,14 +8,35 @@ export interface ItineraryFormData {
   routing: string;
   tags: string[];
   tripType: string;
+  
+  // Main itinerary image
+  mainImage?: string;
+  
+  // City-level images
+  cityImages?: Array<{
+    city: string;
+    image?: string;
+  }>;
 
   // Step 2: Highlights
-  hotels: string[];
-  experiences: string[];
+  hotels: Array<{
+    name: string;
+    image?: string;
+  }>;
+  experiences: Array<{
+    name: string;
+    image?: string;
+  }>;
   practicalInfo: {
     visa: string;
     currency: string;
     tips: string[];
+    // Additional inclusions with images
+    otherInclusions?: Array<{
+      name: string;
+      description?: string;
+      image?: string;
+    }>;
   };
 
   // Step 3: Day-wise Itinerary
@@ -23,12 +44,18 @@ export interface ItineraryFormData {
     day: number;
     title: string;
     content: string;
+    image?: string;
   }>;
 
   // Step 4: Optional Blocks
   withKids: string;
   withFamily: string;
   offbeatSuggestions: string;
+  
+  // Step 4: Optional Block Images
+  withKidsImage?: string;
+  withFamilyImage?: string;
+  offbeatImage?: string;
 }
 
 // API Request/Response types

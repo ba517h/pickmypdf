@@ -8,21 +8,32 @@ interface ItineraryFormData {
   routing: string;
   tags: string[];
   tripType: string;
-  hotels: string[];
-  experiences: string[];
+  mainImage?: string;
+  cityImages?: Array<{ city: string; image?: string; }>;
+  hotels: Array<{ name: string; image?: string; }>;
+  experiences: Array<{ name: string; image?: string; }>;
   practicalInfo: {
     visa: string;
     currency: string;
     tips: string[];
+    otherInclusions?: Array<{
+      name: string;
+      description?: string;
+      image?: string;
+    }>;
   };
   dayWiseItinerary: Array<{
     day: number;
     title: string;
     content: string;
+    image?: string;
   }>;
   withKids: string;
   withFamily: string;
   offbeatSuggestions: string;
+  withKidsImage?: string;
+  withFamilyImage?: string;
+  offbeatImage?: string;
 }
 
 Use your best judgment to populate all fields from the input. Leave fields blank if information is missing. Don't hallucinate.
@@ -31,6 +42,8 @@ Use your best judgment to populate all fields from the input. Leave fields blank
 ✅ Do not include explanations, comments, or repeat the input content.
 ✅ Use short phrases instead of full sentences for arrays and descriptions.
 ✅ Minimize whitespace, avoid markdown or code blocks.
+✅ For image fields, leave them empty as they will be handled by the UI.
+✅ Convert simple string arrays (hotels, experiences) to object arrays with name property.
 
 Respond only with the JSON object. No additional text.
 `.trim();
