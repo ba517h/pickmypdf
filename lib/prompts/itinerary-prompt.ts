@@ -1,70 +1,49 @@
-/**
- * Generate a comprehensive prompt for OpenAI to extract itinerary data
- * This prompt is designed to work with GPT-4 and ensures consistent output format
- */
-export function generateItineraryPrompt(content: string): string {
-  return `
-Extract travel itinerary information from the following content and return it as a JSON object matching this exact schema:
+export const SYSTEM_PROMPT = `
+You are a travel planning assistant.
 
+Your task is to extract structured travel itinerary data from unstructured content. Be token-efficient and strictly follow the format and rules below.
+
+✅ Output only a compact JSON object matching the provided schema.
+✅ Do not include explanations, comments, or repeat the input content.
+✅ Leave fields blank if data is missing — never guess.
+✅ Use short phrases instead of full sentences for experiences, tips, etc.
+✅ Minimize whitespace, avoid markdown or code blocks.
+
+Respond only with the JSON object. No additional text.
+
+Example format:
 {
-  "title": "string - A compelling trip title",
-  "destination": "string - Countries, cities, or regions",
-  "duration": "string - Trip length (e.g., '7 days', '2 weeks')",
-  "routing": "string - Travel route description",
-  "tags": ["array of strings - descriptive tags"],
-  "tripType": "string - One of: Adventure, Relaxation, Cultural, Business, Family, Romantic, Solo Travel, Group Travel, Backpacking, Luxury",
-  
-  "hotels": ["array of strings - hotel/accommodation names"],
-  "experiences": ["array of strings - key activities and experiences"],
+  "title": "",
+  "destination": "",
+  "duration": "",
+  "routing": "",
+  "tags": [],
+  "tripType": "",
+  "hotels": [],
+  "experiences": [],
   "practicalInfo": {
-    "visa": "string - visa requirements and entry information",
-    "currency": "string - currency info and budget guidance",
-    "tips": ["array of strings - practical travel tips"]
+    "visa": "",
+    "currency": "",
+    "tips": []
   },
-  
   "dayWiseItinerary": [
     {
-      "day": number,
-      "title": "string - day title",
-      "content": "string - detailed daily activities with times if available"
+      "day": 1,
+      "title": "",
+      "content": ""
     }
   ],
-  
-  "withKids": "string - family travel recommendations",
-  "withFamily": "string - multi-generational travel advice", 
-  "offbeatSuggestions": "string - unique/alternative recommendations"
+  "withKids": "",
+  "withFamily": "",
+  "offbeatSuggestions": ""
 }
+`.trim();
 
-EXTRACTION GUIDELINES:
-
-1. **Title**: Create a compelling, descriptive title if not explicitly provided
-2. **Destination**: Extract all mentioned locations, countries, cities
-3. **Duration**: Parse any time references (days, weeks, months)
-4. **Routing**: Describe the travel path/sequence if mentioned
-5. **Tags**: Add relevant keywords (budget, luxury, adventure, etc.)
-6. **Trip Type**: Choose the most appropriate category from the list
-7. **Hotels**: Extract accommodation names, avoid generic descriptions
-8. **Experiences**: List specific activities, tours, attractions
-9. **Practical Info**: 
-   - Visa: Any entry requirements mentioned
-   - Currency: Local currency and budget information
-   - Tips: Practical advice (what to pack, customs, etc.)
-10. **Day-wise**: Structure chronological activities by day
-11. **Family sections**: Extract any family-specific advice
-12. **Offbeat**: Alternative or unique suggestions
-
-IMPORTANT RULES:
-- Return ONLY valid JSON, no additional text
-- Use empty strings "" for missing string fields
-- Use empty arrays [] for missing array fields
-- Ensure all required fields are present
-- If no day-wise information is available, create a reasonable structure based on activities mentioned
-- Keep descriptions concise but informative
-- Preserve specific names, places, and details mentioned in the source
-
-Content to extract from:
-${content}
-`;
+/**
+ * Generate a token-efficient prompt for OpenAI to extract itinerary data
+ */
+export function generateItineraryPrompt(content: string): string {
+  return `Extract travel data from: ${content}`;
 }
 
 /**

@@ -3,7 +3,7 @@ import OpenAI from "openai";
 import { ItineraryFormDataSchema } from "@/lib/schemas";
 import { extractTextFromUrl } from "@/lib/extractors/url-extractor";
 import { extractTextFromPdf } from "@/lib/extractors/pdf-extractor";
-import { generateItineraryPrompt } from "@/lib/prompts/itinerary-prompt";
+import { generateItineraryPrompt, SYSTEM_PROMPT } from "@/lib/prompts/itinerary-prompt";
 
 // Initialize OpenAI with proper error handling
 const openai = process.env.OPENAI_API_KEY ? new OpenAI({
@@ -86,15 +86,15 @@ export async function POST(request: NextRequest) {
       messages: [
         {
           role: "system",
-          content: `You are a travel planning expert. Extract and structure travel itinerary information from the provided content. Return ONLY valid JSON matching the specified schema.`,
+          content: SYSTEM_PROMPT,
         },
         {
           role: "user",
           content: prompt,
         },
       ],
-      temperature: 0.3,
-      max_tokens: 3000,
+      temperature: 0.1,
+      max_tokens: 2000,
     });
 
     const responseContent = completion.choices[0]?.message?.content;
