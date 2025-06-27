@@ -12,6 +12,7 @@ import { OverviewStep } from "@/components/itinerary/overview-step";
 import { HighlightsStep } from "@/components/itinerary/highlights-step";
 import { DayWiseStep } from "@/components/itinerary/day-wise-step";
 import { OptionalBlocksStep } from "@/components/itinerary/optional-blocks-step";
+import { SmartInput } from "@/components/smart-input";
 
 export interface ItineraryFormData {
   // Step 1: Overview
@@ -53,6 +54,7 @@ const steps = [
 
 export default function ItineraryCreatorPage() {
   const [currentStep, setCurrentStep] = useState(1);
+  const [showSmartInput, setShowSmartInput] = useState(true);
   const [formData, setFormData] = useState<ItineraryFormData>({
     title: "",
     destination: "",
@@ -79,6 +81,12 @@ export default function ItineraryCreatorPage() {
 
   const updateFormData = (stepData: Partial<ItineraryFormData>) => {
     setFormData(prev => ({ ...prev, ...stepData }));
+  };
+
+  const handleDataParsed = (data: ItineraryFormData) => {
+    setFormData(data);
+    setShowSmartInput(false);
+    setCurrentStep(1);
   };
 
   const nextStep = () => {
@@ -155,8 +163,24 @@ export default function ItineraryCreatorPage() {
         </p>
       </div>
 
+      {/* Smart Input Section */}
+      {showSmartInput && (
+        <div className="mb-8">
+          <SmartInput onDataParsed={handleDataParsed} />
+          <div className="flex items-center justify-center mt-6">
+            <Button
+              variant="outline"
+              onClick={() => setShowSmartInput(false)}
+            >
+              Skip and create manually
+            </Button>
+          </div>
+        </div>
+      )}
+
       {/* Progress indicator */}
-      <div className="mb-8">
+      {!showSmartInput && (
+        <div className="mb-8">
         <div className="flex justify-between items-center mb-4">
           <span className="text-sm font-medium">
             Step {currentStep} of {steps.length}
@@ -198,9 +222,11 @@ export default function ItineraryCreatorPage() {
           ))}
         </div>
       </div>
+      )}
 
       {/* Form content */}
-      <Card className="mb-8">
+      {!showSmartInput && (
+        <Card className="mb-8">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Badge variant="outline">{currentStep}</Badge>
@@ -212,9 +238,11 @@ export default function ItineraryCreatorPage() {
         </CardHeader>
         <CardContent>{renderCurrentStep()}</CardContent>
       </Card>
+      )}
 
       {/* Navigation buttons */}
-      <div className="flex justify-between">
+      {!showSmartInput && (
+        <div className="flex justify-between">
         <Button
           variant="outline"
           onClick={prevStep}
@@ -238,6 +266,7 @@ export default function ItineraryCreatorPage() {
           )}
         </div>
       </div>
+      )}
     </div>
   );
 } 
