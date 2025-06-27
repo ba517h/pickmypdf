@@ -10,7 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { X, Plus, MapPin, Star, Info } from "lucide-react";
-import { ItineraryFormData } from "@/app/itinerary/page";
+import { ItineraryFormData } from "@/lib/types";
 
 interface HighlightsStepProps {
   data: ItineraryFormData;
@@ -274,7 +274,7 @@ export function HighlightsStep({ data, onUpdate }: HighlightsStepProps) {
             )}
             
             <p className="text-sm text-muted-foreground">
-              Essential tips for travelers (e.g., "Download offline maps", "Bring insect repellent")
+              Essential tips for travelers (e.g., &quot;Download offline maps&quot;, &quot;Bring insect repellent&quot;)
             </p>
           </div>
         </CardContent>

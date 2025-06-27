@@ -6,7 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Users, Heart, Compass } from "lucide-react";
-import { ItineraryFormData } from "@/app/itinerary/page";
+import { ItineraryFormData } from "@/lib/types";
 
 interface OptionalBlocksStepProps {
   data: ItineraryFormData;
@@ -140,7 +140,7 @@ Examples:
         <ul className="text-sm text-muted-foreground space-y-1">
           <li>• These sections help differentiate your itinerary and add value</li>
           <li>• Consider your target audience when filling these out</li>
-          <li>• You can leave sections blank if they don't apply to your trip</li>
+          <li>• You can leave sections blank if they don&apos;t apply to your trip</li>
           <li>• Include practical details like costs, booking requirements, or advance planning needed</li>
         </ul>
       </div>

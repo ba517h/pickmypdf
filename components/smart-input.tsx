@@ -8,8 +8,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Icons } from "@/components/icons";
-import { FileText, Link, Type, Upload } from "lucide-react";
-import { ItineraryFormData } from "@/app/itinerary/page";
+import { FileText, Link, Type, Upload, RotateCcw } from "lucide-react";
+import { ItineraryFormData } from "@/lib/types";
+import { useExtractFormDataError } from "@/hooks/use-extract-form-data-error";
+import { saveDraft } from "@/lib/storage";
+import { useToast } from "@/components/ui/use-toast";
 
 interface SmartInputProps {
   onDataParsed: (data: ItineraryFormData) => void;
@@ -20,40 +23,52 @@ type InputMode = "text" | "pdf" | "url";
 export function SmartInput({ onDataParsed }: SmartInputProps) {
   const [activeMode, setActiveMode] = useState<InputMode>("text");
   const [isLoading, setIsLoading] = useState(false);
+  const [isRetrying, setIsRetrying] = useState(false);
   const [textContent, setTextContent] = useState("");
   const [urlInput, setUrlInput] = useState("");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  // Store last used parameters for retry functionality
+  const [lastMode, setLastMode] = useState<InputMode | null>(null);
+  const [lastContent, setLastContent] = useState<string>("");
   
   const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  // Use custom error hook instead of local error state
+  const { error, hasError, setError, clearError, logError } = useExtractFormDataError();
+  
+  // Toast for user feedback
+  const { toast } = useToast();
 
-  // Mock function - replace with actual implementation
-  const extractFormData = async (content: string): Promise<ItineraryFormData> => {
-    // Simulate processing time
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    
-    // Mock implementation - replace with actual extraction logic
-    return {
-      title: "Extracted Itinerary",
-      destination: "Multiple Destinations", 
-      duration: "7 days",
-      routing: "",
-      tags: ["extracted"],
-      tripType: "Adventure",
-      hotels: [],
-      experiences: [],
-      practicalInfo: {
-        visa: "",
-        currency: "",
-        tips: []
-      },
-      dayWiseItinerary: [
-        { day: 1, title: "Day 1", content: "Extracted content..." }
-      ],
-      withKids: "",
-      withFamily: "",
-      offbeatSuggestions: ""
-    };
+  // API call to extract form data
+  const extractFormData = async (mode: InputMode, content: string): Promise<ItineraryFormData> => {
+    let requestBody: any;
+    let headers: HeadersInit = {};
+
+    if (mode === "text") {
+      requestBody = JSON.stringify({ text: content });
+      headers = { "Content-Type": "application/json" };
+    } else if (mode === "url") {
+      requestBody = JSON.stringify({ url: content });
+      headers = { "Content-Type": "application/json" };
+    } else if (mode === "pdf" && selectedFile) {
+      requestBody = new FormData();
+      requestBody.append("pdf", selectedFile);
+      // Don't set Content-Type for FormData - browser will set it with boundary
+    }
+
+    const response = await fetch("/api/extract", {
+      method: "POST",
+      headers,
+      body: requestBody,
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || `HTTP ${response.status}`);
+    }
+
+    const result = await response.json();
+    return result.data;
   };
 
   const handleFileSelect = (event: ChangeEvent<HTMLInputElement>) => {
@@ -61,7 +76,7 @@ export function SmartInput({ onDataParsed }: SmartInputProps) {
     if (file) {
       if (file.type === "application/pdf") {
         setSelectedFile(file);
-        setError(null);
+        clearError();
       } else {
         setError("Please select a PDF file");
         setSelectedFile(null);
@@ -70,12 +85,12 @@ export function SmartInput({ onDataParsed }: SmartInputProps) {
   };
 
   const handleSubmit = async () => {
-    setError(null);
+    clearError();
     setIsLoading(true);
 
-    try {
-      let content = "";
+    let content = "";
 
+    try {
       switch (activeMode) {
         case "text":
           if (!textContent.trim()) {
@@ -107,7 +122,21 @@ export function SmartInput({ onDataParsed }: SmartInputProps) {
           break;
       }
 
-      const extractedData = await extractFormData(content);
+      // Store parameters for retry functionality
+      setLastMode(activeMode);
+      setLastContent(content);
+
+      const extractedData = await extractFormData(activeMode, content);
+      
+      // Auto-save draft after successful extraction
+      saveDraft(extractedData);
+      
+      // Show success toast
+      toast({
+        title: "Itinerary Extracted Successfully",
+        description: "AI-generated itinerary loaded. You can edit or refine it below.",
+      });
+      
       onDataParsed(extractedData);
       
       // Reset form
@@ -119,9 +148,44 @@ export function SmartInput({ onDataParsed }: SmartInputProps) {
       }
       
     } catch (err) {
-      setError(err instanceof Error ? err.message : "An error occurred");
+      const errorMessage = err instanceof Error ? err.message : "An error occurred";
+      setError(errorMessage);
+      logError("Extraction failed", { error: err, mode: activeMode, contentLength: content?.length });
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  // Retry functionality - re-attempts the previous input using same mode and content
+  const handleRetry = async () => {
+    if (!lastMode || !lastContent) {
+      setError("No previous attempt to retry");
+      return;
+    }
+
+    clearError();
+    setIsRetrying(true);
+
+    try {
+      const extractedData = await extractFormData(lastMode, lastContent);
+      
+      // Auto-save draft after successful extraction
+      saveDraft(extractedData);
+      
+      // Show success toast
+      toast({
+        title: "Itinerary Extracted Successfully",
+        description: "AI-generated itinerary loaded. You can edit or refine it below.",
+      });
+      
+      onDataParsed(extractedData);
+      
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : "Retry failed. Please try again.";
+      setError(errorMessage);
+      logError("Retry failed", { error: err, mode: lastMode, contentLength: lastContent.length });
+    } finally {
+      setIsRetrying(false);
     }
   };
 
@@ -168,7 +232,7 @@ export function SmartInput({ onDataParsed }: SmartInputProps) {
                 variant={activeMode === mode.id ? "default" : "outline"}
                 onClick={() => setActiveMode(mode.id)}
                 className="flex flex-col items-center gap-2 h-auto py-4"
-                disabled={isLoading}
+                disabled={isLoading || isRetrying}
               >
                 <Icon className="w-5 h-5" />
                 <div className="text-center">
@@ -204,7 +268,7 @@ Day 2: Temple Tour
                 value={textContent}
                 onChange={(e) => setTextContent(e.target.value)}
                 rows={10}
-                disabled={isLoading}
+                disabled={isLoading || isRetrying}
               />
             </div>
           )}
@@ -219,7 +283,7 @@ Day 2: Temple Tour
                   accept=".pdf"
                   onChange={handleFileSelect}
                   ref={fileInputRef}
-                  disabled={isLoading}
+                  disabled={isLoading || isRetrying}
                 />
                 {selectedFile && (
                   <div className="p-3 bg-muted rounded-lg flex items-center gap-2">
@@ -243,7 +307,7 @@ Day 2: Temple Tour
                 placeholder="https://example.com/itinerary"
                 value={urlInput}
                 onChange={(e) => setUrlInput(e.target.value)}
-                disabled={isLoading}
+                disabled={isLoading || isRetrying}
               />
               <p className="text-sm text-muted-foreground">
                 Enter a URL to extract itinerary content from a webpage
@@ -253,16 +317,40 @@ Day 2: Temple Tour
         </div>
 
         {/* Error Display */}
-        {error && (
-          <div className="p-3 bg-destructive/10 border border-destructive/20 rounded-lg text-destructive text-sm">
-            {error}
+        {hasError && (
+          <div className="space-y-3">
+            <div className="p-3 bg-destructive/10 border border-destructive/20 rounded-lg text-destructive text-sm">
+              {error}
+            </div>
+            {/* Retry Button - Only show if we have previous attempt data */}
+            {lastMode && lastContent && (
+              <Button 
+                onClick={handleRetry} 
+                disabled={isRetrying || isLoading}
+                variant="outline"
+                size="sm"
+                className="w-full"
+              >
+                {isRetrying ? (
+                  <>
+                    <Icons.loaderCircle className="w-4 h-4 mr-2 animate-spin" />
+                    Retrying...
+                  </>
+                ) : (
+                  <>
+                    <RotateCcw className="w-4 h-4 mr-2" />
+                    Retry Extraction
+                  </>
+                )}
+              </Button>
+            )}
           </div>
         )}
 
         {/* Submit Button */}
         <Button 
           onClick={handleSubmit} 
-          disabled={isLoading}
+          disabled={isLoading || isRetrying}
           className="w-full"
           size="lg"
         >

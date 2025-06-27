@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { X, Plus } from "lucide-react";
-import { ItineraryFormData } from "@/app/itinerary/page";
+import { ItineraryFormData } from "@/lib/types";
 
 interface OverviewStepProps {
   data: ItineraryFormData;
@@ -83,7 +83,7 @@ export function OverviewStep({ data, onUpdate, form }: OverviewStepProps) {
           onChange={(e) => handleInputChange("destination", e.target.value)}
         />
         <p className="text-sm text-muted-foreground">
-          Countries, cities, or regions you'll be visiting
+          Countries, cities, or regions you&apos;ll be visiting
         </p>
       </div>
 

@@ -1,12 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
-import { ChevronLeft, ChevronRight, FileText } from "lucide-react";
+import { ChevronLeft, ChevronRight, FileText, Clock } from "lucide-react";
+import { loadDraft, clearDraft, formatDraftTimestamp } from "@/lib/storage";
+import { useToast } from "@/components/ui/use-toast";
 
 import { OverviewStep } from "@/components/itinerary/overview-step";
 import { HighlightsStep } from "@/components/itinerary/highlights-step";
@@ -14,36 +16,7 @@ import { DayWiseStep } from "@/components/itinerary/day-wise-step";
 import { OptionalBlocksStep } from "@/components/itinerary/optional-blocks-step";
 import { SmartInput } from "@/components/smart-input";
 
-export interface ItineraryFormData {
-  // Step 1: Overview
-  title: string;
-  destination: string;
-  duration: string;
-  routing: string;
-  tags: string[];
-  tripType: string;
-
-  // Step 2: Highlights
-  hotels: string[];
-  experiences: string[];
-  practicalInfo: {
-    visa: string;
-    currency: string;
-    tips: string[];
-  };
-
-  // Step 3: Day-wise Itinerary
-  dayWiseItinerary: Array<{
-    day: number;
-    title: string;
-    content: string;
-  }>;
-
-  // Step 4: Optional Blocks
-  withKids: string;
-  withFamily: string;
-  offbeatSuggestions: string;
-}
+import { ItineraryFormData } from "@/lib/types";
 
 const steps = [
   { id: 1, title: "Overview", description: "Basic trip information" },
@@ -55,6 +28,8 @@ const steps = [
 export default function ItineraryCreatorPage() {
   const [currentStep, setCurrentStep] = useState(1);
   const [showSmartInput, setShowSmartInput] = useState(true);
+  const [showDraftPrompt, setShowDraftPrompt] = useState(false);
+  const [draftData, setDraftData] = useState<{ data: ItineraryFormData; timestamp: string } | null>(null);
   const [formData, setFormData] = useState<ItineraryFormData>({
     title: "",
     destination: "",
@@ -79,6 +54,17 @@ export default function ItineraryCreatorPage() {
     defaultValues: formData
   });
 
+  const { toast } = useToast();
+
+  // Check for saved draft on component mount
+  useEffect(() => {
+    const draft = loadDraft();
+    if (draft) {
+      setDraftData(draft);
+      setShowDraftPrompt(true);
+    }
+  }, []);
+
   const updateFormData = (stepData: Partial<ItineraryFormData>) => {
     setFormData(prev => ({ ...prev, ...stepData }));
   };
@@ -87,6 +73,32 @@ export default function ItineraryCreatorPage() {
     setFormData(data);
     setShowSmartInput(false);
     setCurrentStep(1);
+  };
+
+  // Handle draft prompt actions
+  const handleContinueWithDraft = () => {
+    if (draftData) {
+      setFormData(draftData.data);
+      setShowSmartInput(false);
+      setCurrentStep(1);
+      setShowDraftPrompt(false);
+      
+      toast({
+        title: "Draft Loaded",
+        description: "Your previous itinerary draft has been loaded. You can continue editing.",
+      });
+    }
+  };
+
+  const handleDiscardDraft = () => {
+    clearDraft();
+    setDraftData(null);
+    setShowDraftPrompt(false);
+    
+    toast({
+      title: "Draft Discarded",
+      description: "Your previous draft has been cleared. Starting fresh.",
+    });
   };
 
   const nextStep = () => {
@@ -163,8 +175,38 @@ export default function ItineraryCreatorPage() {
         </p>
       </div>
 
+      {/* Draft Prompt */}
+      {showDraftPrompt && draftData && (
+        <Card className="mb-8 border-blue-200 bg-blue-50/50">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-blue-900">
+              <Clock className="w-5 h-5" />
+              Draft Found
+            </CardTitle>
+            <CardDescription className="text-blue-700">
+              We found a saved itinerary draft from {formatDraftTimestamp(draftData.timestamp)}. 
+              Would you like to continue editing it or start fresh?
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex gap-3">
+              <Button onClick={handleContinueWithDraft} className="flex-1">
+                Continue Editing Draft
+              </Button>
+              <Button 
+                onClick={handleDiscardDraft} 
+                variant="outline" 
+                className="flex-1"
+              >
+                Start Fresh
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Smart Input Section */}
-      {showSmartInput && (
+      {showSmartInput && !showDraftPrompt && (
         <div className="mb-8">
           <SmartInput onDataParsed={handleDataParsed} />
           <div className="flex items-center justify-center mt-6">

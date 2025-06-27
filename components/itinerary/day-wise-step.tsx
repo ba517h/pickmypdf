@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Plus, Trash2, Calendar, Clock } from "lucide-react";
-import { ItineraryFormData } from "@/app/itinerary/page";
+import { ItineraryFormData } from "@/lib/types";
 
 interface DayWiseStepProps {
   data: ItineraryFormData;
