@@ -13,7 +13,9 @@ import { useToast } from "@/components/ui/use-toast";
 import { OverviewStep } from "@/components/itinerary/overview-step";
 import { HighlightsStep } from "@/components/itinerary/highlights-step";
 import { DayWiseStep } from "@/components/itinerary/day-wise-step";
+import { GalleryStep } from "@/components/itinerary/gallery-step";
 import { OptionalBlocksStep } from "@/components/itinerary/optional-blocks-step";
+import { PdfPreview } from "@/components/itinerary/pdf-preview";
 import { SmartInput } from "@/components/smart-input";
 
 import { ItineraryFormData } from "@/lib/types";
@@ -22,7 +24,8 @@ const steps = [
   { id: 1, title: "Overview", description: "Basic trip information" },
   { id: 2, title: "Highlights", description: "Hotels and experiences" },
   { id: 3, title: "Day-wise", description: "Daily itinerary" },
-  { id: 4, title: "Optional", description: "Additional suggestions" }
+  { id: 4, title: "Gallery", description: "Destination showcase" },
+  { id: 5, title: "Optional", description: "Additional suggestions" }
 ];
 
 export default function ItineraryCreatorPage() {
@@ -50,10 +53,7 @@ export default function ItineraryCreatorPage() {
     dayWiseItinerary: [],
     withKids: "",
     withFamily: "",
-    offbeatSuggestions: "",
-    withKidsImage: "",
-    withFamilyImage: "",
-    offbeatImage: ""
+    offbeatSuggestions: ""
   });
 
   const form = useForm<ItineraryFormData>({
@@ -157,6 +157,14 @@ export default function ItineraryCreatorPage() {
         );
       case 4:
         return (
+          <GalleryStep
+            data={formData}
+            onUpdate={updateFormData}
+            form={form}
+          />
+        );
+      case 5:
+        return (
           <OptionalBlocksStep
             data={formData}
             onUpdate={updateFormData}
@@ -171,7 +179,8 @@ export default function ItineraryCreatorPage() {
   const progressPercentage = (currentStep / steps.length) * 100;
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-4xl">
+    <div className="container mx-auto px-4 py-8 max-w-7xl">
+      {/* Header Section */}
       <div className="mb-8">
         <h1 className="text-3xl font-bold tracking-tight mb-2">
           Create Your Travel Itinerary
@@ -226,94 +235,101 @@ export default function ItineraryCreatorPage() {
         </div>
       )}
 
-      {/* Progress indicator */}
+      {/* Two-Column Layout */}
       {!showSmartInput && (
-        <div className="mb-8">
-        <div className="flex justify-between items-center mb-4">
-          <span className="text-sm font-medium">
-            Step {currentStep} of {steps.length}
-          </span>
-          <span className="text-sm text-muted-foreground">
-            {Math.round(progressPercentage)}% Complete
-          </span>
-        </div>
-        <Progress value={progressPercentage} className="mb-4" />
-        
-        {/* Step navigation */}
-        <div className="flex justify-between">
-          {steps.map((step) => (
-            <button
-              key={step.id}
-              onClick={() => goToStep(step.id)}
-              className={`flex flex-col items-center text-sm transition-colors ${
-                step.id === currentStep
-                  ? "text-primary"
-                  : step.id < currentStep
-                  ? "text-green-600"
-                  : "text-muted-foreground"
-              }`}
-            >
-              <div
-                className={`w-8 h-8 rounded-full flex items-center justify-center mb-1 border-2 transition-colors ${
-                  step.id === currentStep
-                    ? "border-primary bg-primary text-primary-foreground"
-                    : step.id < currentStep
-                    ? "border-green-600 bg-green-600 text-white"
-                    : "border-muted-foreground"
-                }`}
-              >
-                {step.id < currentStep ? "✓" : step.id}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Left Column - Form */}
+          <div className="lg:col-span-2 space-y-6">
+            {/* Progress indicator */}
+            <div className="space-y-4">
+              <div className="flex justify-between items-center">
+                <span className="text-sm font-medium">
+                  Step {currentStep} of {steps.length}
+                </span>
+                <span className="text-sm text-muted-foreground">
+                  {Math.round(progressPercentage)}% Complete
+                </span>
               </div>
-              <span className="font-medium">{step.title}</span>
-              <span className="text-xs opacity-75">{step.description}</span>
-            </button>
-          ))}
+              <Progress value={progressPercentage} className="h-2" />
+              
+              {/* Step navigation */}
+              <div className="grid grid-cols-5 gap-2">
+                {steps.map((step) => (
+                  <button
+                    key={step.id}
+                    onClick={() => goToStep(step.id)}
+                    className={`flex flex-col items-center text-sm transition-colors p-3 rounded-lg border ${
+                      step.id === currentStep
+                        ? "border-primary bg-primary/5 text-primary"
+                        : step.id < currentStep
+                        ? "border-green-200 bg-green-50 text-green-700"
+                        : "border-muted bg-muted/30 text-muted-foreground hover:bg-muted/50"
+                    }`}
+                  >
+                    <div
+                      className={`w-6 h-6 rounded-full flex items-center justify-center mb-1 text-xs font-medium ${
+                        step.id === currentStep
+                          ? "bg-primary text-primary-foreground"
+                          : step.id < currentStep
+                          ? "bg-green-600 text-white"
+                          : "bg-muted-foreground/20"
+                      }`}
+                    >
+                      {step.id < currentStep ? "✓" : step.id}
+                    </div>
+                    <span className="font-medium text-xs">{step.title}</span>
+                    <span className="text-xs opacity-75">{step.description}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Form content */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Badge variant="outline">{currentStep}</Badge>
+                  {steps[currentStep - 1].title}
+                </CardTitle>
+                <CardDescription>
+                  {steps[currentStep - 1].description}
+                </CardDescription>
+              </CardHeader>
+              <CardContent>{renderCurrentStep()}</CardContent>
+            </Card>
+
+            {/* Navigation buttons */}
+            <div className="flex justify-between">
+              <Button
+                variant="outline"
+                onClick={prevStep}
+                disabled={currentStep === 1}
+              >
+                <ChevronLeft className="w-4 h-4 mr-2" />
+                Previous
+              </Button>
+
+              <div className="flex gap-2">
+                {currentStep === steps.length ? (
+                  <Button onClick={generatePDF} className="gap-2">
+                    <FileText className="w-4 h-4" />
+                    Generate PDF
+                  </Button>
+                ) : (
+                  <Button onClick={nextStep}>
+                    Next
+                    <ChevronRight className="w-4 h-4 ml-2" />
+                  </Button>
+                )}
+              </div>
+            </div>
+          </div>
+
+                     {/* Right Column - PDF Preview */}
+           <div className="lg:col-span-1">
+             <PdfPreview data={formData} />
+           </div>
         </div>
-      </div>
-      )}
-
-      {/* Form content */}
-      {!showSmartInput && (
-        <Card className="mb-8">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Badge variant="outline">{currentStep}</Badge>
-            {steps[currentStep - 1].title}
-          </CardTitle>
-          <CardDescription>
-            {steps[currentStep - 1].description}
-          </CardDescription>
-        </CardHeader>
-        <CardContent>{renderCurrentStep()}</CardContent>
-      </Card>
-      )}
-
-      {/* Navigation buttons */}
-      {!showSmartInput && (
-        <div className="flex justify-between">
-        <Button
-          variant="outline"
-          onClick={prevStep}
-          disabled={currentStep === 1}
-        >
-          <ChevronLeft className="w-4 h-4 mr-2" />
-          Previous
-        </Button>
-
-        <div className="flex gap-2">
-          {currentStep === steps.length ? (
-            <Button onClick={generatePDF} className="gap-2">
-              <FileText className="w-4 h-4" />
-              Generate PDF
-            </Button>
-          ) : (
-            <Button onClick={nextStep}>
-              Next
-              <ChevronRight className="w-4 h-4 ml-2" />
-            </Button>
-          )}
-        </div>
-      </div>
       )}
     </div>
   );

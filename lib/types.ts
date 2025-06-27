@@ -51,8 +51,13 @@ export interface ItineraryFormData {
   withKids: string;
   withFamily: string;
   offbeatSuggestions: string;
-  
 
+  // Destination Gallery
+  destinationGallery?: Array<{
+    name: string;
+    image?: string;
+    type: "city" | "activity" | "landmark";
+  }>;
 }
 
 // API Request/Response types
