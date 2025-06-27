@@ -6,7 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Users, Heart, Compass } from "lucide-react";
-import { ImageInput } from "@/components/ui/image-input";
+
 import { ItineraryFormData } from "@/lib/types";
 
 interface OptionalBlocksStepProps {
@@ -20,9 +20,7 @@ export function OptionalBlocksStep({ data, onUpdate }: OptionalBlocksStepProps) 
     onUpdate({ [field]: value });
   };
 
-  const handleImageChange = (field: 'withKidsImage' | 'withFamilyImage' | 'offbeatImage', value: string) => {
-    onUpdate({ [field]: value });
-  };
+
 
   return (
     <div className="space-y-6">
@@ -42,24 +40,11 @@ export function OptionalBlocksStep({ data, onUpdate }: OptionalBlocksStepProps) 
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Image Section */}
-            <div className="space-y-2">
-              <ImageInput
-                label="Section Image"
-                value={data.withKidsImage}
-                onChange={(value) => handleImageChange("withKidsImage", value)}
-                keywords="family travel kids children playground"
-                placeholder="Kids & Family Travel"
-              />
-            </div>
-            
-            {/* Text Section */}
-            <div className="space-y-2">
-              <Label htmlFor="withKids">Kid-Friendly Recommendations</Label>
-              <Textarea
-                id="withKids"
-                placeholder="Share tips and recommendations for families traveling with children...
+          <div className="space-y-2">
+            <Label htmlFor="withKids">Kid-Friendly Recommendations</Label>
+            <Textarea
+              id="withKids"
+              placeholder="Share tips and recommendations for families traveling with children...
 
 Examples:
 • Child-friendly restaurants with high chairs and kids menus
@@ -69,14 +54,13 @@ Examples:
 • Transportation tips for traveling with kids
 • Entertainment ideas for long travel days
 • Local parks and playgrounds"
-                value={data.withKids}
-                onChange={(e) => handleInputChange("withKids", e.target.value)}
-                rows={8}
-              />
-              <p className="text-sm text-muted-foreground">
-                Include family-friendly activities, safety tips, and practical advice for parents
-              </p>
-            </div>
+              value={data.withKids}
+              onChange={(e) => handleInputChange("withKids", e.target.value)}
+              rows={8}
+            />
+            <p className="text-sm text-muted-foreground">
+              Include family-friendly activities, safety tips, and practical advice for parents
+            </p>
           </div>
         </CardContent>
       </Card>
@@ -92,24 +76,11 @@ Examples:
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Image Section */}
-            <div className="space-y-2">
-              <ImageInput
-                label="Section Image"
-                value={data.withFamilyImage}
-                onChange={(value) => handleImageChange("withFamilyImage", value)}
-                keywords="multi generational family travel grandparents"
-                placeholder="Multi-Generational Family Travel"
-              />
-            </div>
-            
-            {/* Text Section */}
-            <div className="space-y-2">
-              <Label htmlFor="withFamily">Multi-Generational Travel</Label>
-              <Textarea
-                id="withFamily"
-                placeholder="Recommendations for traveling with extended family or multiple generations...
+          <div className="space-y-2">
+            <Label htmlFor="withFamily">Multi-Generational Travel</Label>
+            <Textarea
+              id="withFamily"
+              placeholder="Recommendations for traveling with extended family or multiple generations...
 
 Examples:
 • Accommodations suitable for larger groups
@@ -119,14 +90,13 @@ Examples:
 • Transportation for larger groups
 • Pace considerations and rest stops
 • Cultural experiences that bring families together"
-                value={data.withFamily}
-                onChange={(e) => handleInputChange("withFamily", e.target.value)}
-                rows={8}
-              />
-              <p className="text-sm text-muted-foreground">
-                Consider different ages, interests, and mobility needs within the family
-              </p>
-            </div>
+              value={data.withFamily}
+              onChange={(e) => handleInputChange("withFamily", e.target.value)}
+              rows={8}
+            />
+            <p className="text-sm text-muted-foreground">
+              Consider different ages, interests, and mobility needs within the family
+            </p>
           </div>
         </CardContent>
       </Card>
@@ -142,24 +112,11 @@ Examples:
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Image Section */}
-            <div className="space-y-2">
-              <ImageInput
-                label="Section Image"
-                value={data.offbeatImage}
-                onChange={(value) => handleImageChange("offbeatImage", value)}
-                keywords="adventure offbeat hidden gems exploration"
-                placeholder="Offbeat Adventures & Hidden Gems"
-              />
-            </div>
-            
-            {/* Text Section */}
-            <div className="space-y-2">
-              <Label htmlFor="offbeatSuggestions">Hidden Gems & Unique Experiences</Label>
-              <Textarea
-                id="offbeatSuggestions"
-                placeholder="Share lesser-known attractions, local secrets, and unique experiences...
+          <div className="space-y-2">
+            <Label htmlFor="offbeatSuggestions">Hidden Gems & Unique Experiences</Label>
+            <Textarea
+              id="offbeatSuggestions"
+              placeholder="Share lesser-known attractions, local secrets, and unique experiences...
 
 Examples:
 • Hidden local markets and street food spots
@@ -170,14 +127,13 @@ Examples:
 • Alternative routes or transportation methods
 • Quirky accommodations or unique stays
 • Seasonal or special event recommendations"
-                value={data.offbeatSuggestions}
-                onChange={(e) => handleInputChange("offbeatSuggestions", e.target.value)}
-                rows={8}
-              />
-              <p className="text-sm text-muted-foreground">
-                Include unconventional experiences that adventurous travelers might enjoy
-              </p>
-            </div>
+              value={data.offbeatSuggestions}
+              onChange={(e) => handleInputChange("offbeatSuggestions", e.target.value)}
+              rows={8}
+            />
+            <p className="text-sm text-muted-foreground">
+              Include unconventional experiences that adventurous travelers might enjoy
+            </p>
           </div>
         </CardContent>
       </Card>
@@ -189,7 +145,7 @@ Examples:
           <li>• Consider your target audience when filling these out</li>
           <li>• You can leave sections blank if they don&apos;t apply to your trip</li>
           <li>• Include practical details like costs, booking requirements, or advance planning needed</li>
-          <li>• Images help make your itinerary more visually appealing and engaging</li>
+          <li>• Use clear, descriptive language to help travelers visualize the experiences</li>
         </ul>
       </div>
     </div>

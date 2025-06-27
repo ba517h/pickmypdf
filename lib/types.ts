@@ -52,10 +52,7 @@ export interface ItineraryFormData {
   withFamily: string;
   offbeatSuggestions: string;
   
-  // Step 4: Optional Block Images
-  withKidsImage?: string;
-  withFamilyImage?: string;
-  offbeatImage?: string;
+
 }
 
 // API Request/Response types

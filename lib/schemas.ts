@@ -70,10 +70,7 @@ export const ItineraryFormDataSchema = z.object({
   withFamily: z.string(),
   offbeatSuggestions: z.string(),
   
-  // Step 4: Optional Block Images
-  withKidsImage: z.string().optional(),
-  withFamilyImage: z.string().optional(),
-  offbeatImage: z.string().optional(),
+
 });
 
 // Request schemas for different input types

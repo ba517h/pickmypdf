@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -30,15 +30,40 @@ export function ImageInput({
   const [imageKey, setImageKey] = useState(0); // For forcing image refresh
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Generate Unsplash URL with keywords
-  const getUnsplashUrl = (searchKeywords: string, forceRefresh: boolean = false) => {
-    const query = encodeURIComponent(searchKeywords);
-    const timestamp = forceRefresh ? `&${Date.now()}` : '';
-    return `https://source.unsplash.com/800x600/?${query}${timestamp}`;
+  // State for API-fetched image URL
+  const [apiImageUrl, setApiImageUrl] = useState<string>("");
+
+  // Fetch image from API when keywords change or refresh is triggered
+  const fetchImageFromAPI = async (searchKeywords: string) => {
+    try {
+      setIsLoading(true);
+      const response = await fetch(`/api/images?q=${encodeURIComponent(searchKeywords)}&type=single`);
+      const data = await response.json();
+      
+      if (data.imageUrl) {
+        setApiImageUrl(data.imageUrl);
+      } else {
+        // Fallback to a reliable placeholder service
+        setApiImageUrl(`https://picsum.photos/800/600?random=${Date.now()}`);
+      }
+    } catch (error) {
+      console.error('Failed to fetch image:', error);
+      // Fallback to a reliable placeholder service
+      setApiImageUrl(`https://picsum.photos/800/600?random=${Date.now()}`);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  // Use user image if available, otherwise use Unsplash placeholder
-  const currentImageUrl = value || getUnsplashUrl(keywords, imageKey > 0);
+  // Fetch image when component mounts or keywords change
+  React.useEffect(() => {
+    if (!value && keywords) {
+      fetchImageFromAPI(keywords);
+    }
+  }, [keywords, value]);
+
+  // Use user image if available, otherwise use API-fetched image
+  const currentImageUrl = value || apiImageUrl;
 
   const handleFileSelect = (file: File) => {
     if (!file.type.startsWith('image/')) {
@@ -95,6 +120,9 @@ export function ImageInput({
 
   const refreshPlaceholder = () => {
     setImageKey(prev => prev + 1);
+    if (keywords) {
+      fetchImageFromAPI(keywords);
+    }
   };
 
   const openFileDialog = () => {
