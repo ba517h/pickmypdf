@@ -142,26 +142,27 @@ export function GalleryStep({ data, onUpdate, form }: GalleryStepProps) {
             {data.destinationGallery.map((item, index) => (
               <Card key={index} className="border border-gray-200">
                 <CardContent className="p-4">
-                  <div className="flex gap-4">
+                  <div className="flex gap-4 items-start">
                     {/* Image Section */}
-                    <div className="w-24 flex-shrink-0">
+                    <div className="w-28 flex-shrink-0">
                       <Label className="text-xs font-medium text-gray-600 mb-2 block">Image</Label>
                       <ImageInput
                         value={item.image}
                         onChange={(imageUrl) => updateGalleryImage(item.name, imageUrl)}
                         keywords={`${item.name} ${data.destination || ''} ${item.type}`}
                         placeholder={`${item.name}`}
-                        className="h-16 w-24"
+                        className="w-full"
+                        compact={true}
                       />
                     </div>
 
                     {/* Content Section */}
-                    <div className="flex-1 space-y-3">
+                    <div className="flex-1 min-w-0">
                       {/* Header with name and remove button */}
-                      <div className="flex items-start justify-between">
-                        <div>
-                          <h4 className="font-medium text-sm">{item.name}</h4>
-                          <div className="flex gap-1 mt-2">
+                      <div className="flex items-start justify-between mb-3">
+                        <div className="flex-1 min-w-0">
+                          <h4 className="font-medium text-sm truncate">{item.name}</h4>
+                          <div className="flex flex-wrap gap-1 mt-2">
                             {["city", "activity", "landmark"].map((type) => (
                               <button
                                 key={type}
@@ -181,7 +182,7 @@ export function GalleryStep({ data, onUpdate, form }: GalleryStepProps) {
                           variant="outline"
                           size="sm"
                           onClick={() => removeGalleryItem(item.name)}
-                          className="text-red-600 hover:text-red-700 h-8 w-8 p-0"
+                          className="text-red-600 hover:text-red-700 h-8 w-8 p-0 ml-2 flex-shrink-0"
                         >
                           <X className="w-3 h-3" />
                         </Button>

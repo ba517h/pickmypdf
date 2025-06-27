@@ -15,6 +15,7 @@ interface ImageInputProps {
   keywords?: string;
   className?: string;
   label?: string;
+  compact?: boolean;
 }
 
 export function ImageInput({ 
@@ -23,7 +24,8 @@ export function ImageInput({
   placeholder = "Select an image", 
   keywords = "travel",
   className,
-  label
+  label,
+  compact = false
 }: ImageInputProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [dragActive, setDragActive] = useState(false);
@@ -57,10 +59,10 @@ export function ImageInput({
 
   // Fetch image when component mounts or keywords change
   React.useEffect(() => {
-    if (!value && keywords) {
+    if (!value && keywords && !apiImageUrl) {
       fetchImageFromAPI(keywords);
     }
-  }, [keywords, value]);
+  }, [keywords, value, apiImageUrl]);
 
   // Use user image if available, otherwise use API-fetched image
   const currentImageUrl = value || apiImageUrl;
@@ -146,7 +148,7 @@ export function ImageInput({
         onDrop={handleDrop}
         onClick={openFileDialog}
       >
-        <div className="aspect-video relative">
+        <div className={cn("relative", compact ? "aspect-[4/3] h-20" : "aspect-video")}>
           {currentImageUrl ? (
             <>
               <img
@@ -192,9 +194,9 @@ export function ImageInput({
             </>
           ) : (
             <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
-              <ImageIcon className="h-8 w-8 mb-2" />
-              <p className="text-sm font-medium">{placeholder}</p>
-              <p className="text-xs">Drag & drop or click to select</p>
+              <ImageIcon className={cn(compact ? "h-4 w-4 mb-1" : "h-8 w-8 mb-2")} />
+              <p className={cn("font-medium", compact ? "text-xs" : "text-sm")}>{compact ? "Image" : placeholder}</p>
+              {!compact && <p className="text-xs">Drag & drop or click to select</p>}
             </div>
           )}
           
@@ -216,17 +218,19 @@ export function ImageInput({
       />
 
       {/* Upload button */}
-      <Button 
-        type="button" 
-        variant="outline" 
-        onClick={openFileDialog}
-        className="w-full"
-      >
-        <Upload className="h-4 w-4 mr-2" />
-        {value ? "Change Image" : "Upload Image"}
-      </Button>
+      {!compact && (
+        <Button 
+          type="button" 
+          variant="outline" 
+          onClick={openFileDialog}
+          className="w-full"
+        >
+          <Upload className="h-4 w-4 mr-2" />
+          {value ? "Change Image" : "Upload Image"}
+        </Button>
+      )}
 
-      {!value && (
+      {!value && !compact && (
         <p className="text-xs text-muted-foreground text-center">
           Using Unsplash image for keywords: &quot;{keywords}&quot;
         </p>
