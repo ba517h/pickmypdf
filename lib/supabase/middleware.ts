@@ -9,6 +9,15 @@ export async function updateSession(request: NextRequest) {
     request,
   });
 
+  // Allow public access to /, /auth/signin, /auth/callback, /api/*, and static files
+  const publicPaths = ["/", "/auth/signin", "/auth/callback"];
+  const isApi = request.nextUrl.pathname.startsWith("/api/");
+  const isStatic = request.nextUrl.pathname.startsWith("/_next") || request.nextUrl.pathname.startsWith("/static") || request.nextUrl.pathname.startsWith("/favicon.ico");
+  
+  if (publicPaths.includes(request.nextUrl.pathname) || isApi || isStatic) {
+    return supabaseResponse;
+  }
+
   // Create a Supabase client
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -52,22 +61,28 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  // Redirect unauthenticated users to sign-in page
-  if (
-    !user &&
-    !request.nextUrl.pathname.startsWith("/signin") &&
-    !request.nextUrl.pathname.startsWith("/auth")
-  ) {
+  // Redirect unauthenticated users trying to access protected routes to sign-in page with redirectTo
+  const protectedRoutes = ["/itinerary", "/admin", "/protected", "/server", "/client"];
+  if (!user && protectedRoutes.some(route => request.nextUrl.pathname.startsWith(route))) {
     const url = request.nextUrl.clone();
-    url.pathname = "/signin";
-    url.searchParams.set("next", request.nextUrl.pathname);
+    const redirectTo = `${request.nextUrl.pathname}${request.nextUrl.search}`;
+    url.pathname = "/auth/signin";
+    url.searchParams.set("redirectTo", redirectTo);
     return NextResponse.redirect(url);
   }
 
-  // Redirect authenticated users attempting to access the sign-in page to the home page
-  if (user && request.nextUrl.pathname.startsWith("/signin")) {
+  // Redirect unauthenticated users to sign-in page (for other protected routes)
+  if (!user) {
     const url = request.nextUrl.clone();
-    url.pathname = "/";
+    url.pathname = "/auth/signin";
+    url.searchParams.set("redirectedFrom", request.nextUrl.pathname);
+    return NextResponse.redirect(url);
+  }
+
+  // Redirect authenticated users attempting to access the sign-in page to the app
+  if (user && request.nextUrl.pathname === "/auth/signin") {
+    const url = request.nextUrl.clone();
+    url.pathname = "/itinerary";
     return NextResponse.redirect(url);
   }
 

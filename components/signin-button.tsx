@@ -10,9 +10,9 @@ import { Icons } from "@/components/icons";
 export function SignInButton() {
   const pathname = usePathname();
 
-  return pathname !== "/signin" ? (
+  return pathname !== "/auth/signin" ? (
     <Link
-      href="/signin"
+      href="/auth/signin"
       className={cn(buttonVariants({ variant: "secondary", size: "sm" }))}
     >
       <Icons.logIn className="mr-2 size-3.5" />

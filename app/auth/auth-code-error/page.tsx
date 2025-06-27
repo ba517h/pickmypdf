@@ -39,7 +39,7 @@ export default function AuthCodeErrorPage() {
 
         <div className="space-y-3">
           <Button asChild className="w-full">
-            <Link href="/signin">
+            <Link href="/auth/signin">
               <Icons.logIn className="mr-2 h-4 w-4" />
               Try Again
             </Link>
