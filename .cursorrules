@@ -1,0 +1,237 @@
+# PickMyPDF Cursor Rules
+
+## Project Overview
+This is a Next.js 14 application for AI-powered travel itinerary creation and PDF generation. The app uses TypeScript, Tailwind CSS, Supabase for auth/storage, and integrates with OpenAI for content extraction. **The project has gone through 7+ major development phases** from basic authentication to a sophisticated travel platform with TRUE 1:1 PDF generation.
+
+## Tech Stack & Key Dependencies
+- **Framework**: Next.js 14 with App Router
+- **Language**: TypeScript (100% strict mode coverage)
+- **Styling**: Tailwind CSS + shadcn/ui components + **Manrope font family**
+- **Database/Auth**: Supabase (Google OAuth, RBAC)
+- **PDF Generation**: Puppeteer with React Server Components (**TRUE 1:1 rendering**)
+- **AI Integration**: OpenAI API for content extraction (**token-optimized**)
+- **Image APIs**: Bing Image Search API, Picsum fallbacks (**NOT Unsplash source URLs**)
+
+## Critical Development Lessons (From 20+ Phase Reports)
+
+### 🚨 NEVER DO THESE (From Phase 7.1 Failure Report)
+- **NEVER** remove sophisticated functionality without understanding its purpose
+- **NEVER** make sweeping changes without comprehensive testing
+- **NEVER** use invalid Puppeteer parameters like `height: 'auto'`
+- **NEVER** convert named exports to default exports without updating all imports
+- **NEVER** remove intelligent image loading systems - they exist for good reasons
+- **NEVER** attempt complete rewrites - always use incremental approach
+- **NEVER** make changes to PDF preview components without ensuring they reflect in generated PDF
+
+### ✅ PROVEN SUCCESSFUL PATTERNS
+- **TRUE 1:1 PDF Generation**: Use actual React components via `renderToString()` 
+- **Incremental Development**: Make small, testable changes
+- **Component Synchronization**: Single source of truth for preview and PDF
+- **Error Handling**: Comprehensive error management with custom hooks
+- **Mobile-First PDF**: 420px continuous layout, not traditional A4 pages
+- **Token Optimization**: 60-70% cost reduction achieved through prompt efficiency
+
+## Code Style & Standards
+
+### TypeScript
+- Use strict TypeScript with **100% type coverage**
+- Define interfaces in `lib/types.ts` for shared types
+- Use Zod schemas in `lib/schemas.ts` for validation
+- Prefer type imports: `import type { ComponentProps } from 'react'`
+- **CRITICAL**: Always validate schema compliance for AI-extracted data
+
+### React/Next.js
+- Use React Server Components by default
+- Add "use client" only when necessary (state, effects, event handlers)
+- Prefer async/await over promises in server components
+- Use Next.js App Router conventions (page.tsx, route.ts, layout.tsx)
+- Follow the established folder structure: `app/[route]/page.tsx`
+- **CRITICAL**: Maintain named exports for components to avoid import issues
+
+### Component Architecture
+- Place reusable UI components in `components/ui/`
+- Feature-specific components go in `components/[feature]/`
+- Use composition over prop drilling
+- Prefer controlled components with proper state management
+- **CRITICAL**: Never remove sophisticated functionality without understanding purpose
+
+### Styling Guidelines
+- Use Tailwind CSS utility classes
+- Follow the established design system with consistent spacing
+- **ALWAYS use the custom Manrope font family**: `font-manrope`
+- Maintain responsive design with **mobile-first approach**
+- Use shadcn/ui components when available
+- **CRITICAL**: Typography must be identical between web preview and PDF
+
+### API Routes
+- Follow REST conventions in `app/api/[endpoint]/route.ts`
+- Use proper HTTP status codes and error handling
+- Validate request bodies with Zod schemas
+- Handle CORS and authentication properly
+- **CRITICAL**: Always include comprehensive error handling and fallbacks
+
+## Project-Specific Proven Patterns
+
+### Three-Column Layout System (Phase 6.1 Success)
+- **Navigation Sidebar**: 2/12 columns with completion indicators
+- **Form Content**: 6/12 columns for optimal editing space  
+- **Live Preview**: 4/12 columns for real-time PDF preview
+- **Full-width utilization**: No unnecessary margins/padding
+- **Non-linear navigation**: Users can jump between sections instantly
+
+### Itinerary Data Structure
+- Use the `ItineraryFormData` interface from `lib/types.ts`
+- Follow the established day-wise structure with activities and images
+- Maintain consistency between form data and PDF generation
+- **CRITICAL**: Auto-save drafts to localStorage with timestamps
+
+### Image Handling (Phase 5 Lessons)
+- **NEVER use deprecated**: `source.unsplash.com` (returns 503 errors)
+- **ALWAYS use**: `/api/images` endpoint for image fetching
+- **Implement proper fallback mechanisms**: Bing API → Picsum (NOT Unsplash source)
+- Handle both file uploads and URL-based images
+- Optimize images for both web preview and PDF generation
+- **Use ImageInput `compact` prop** for gallery thumbnails to prevent UI breaking
+
+### PDF Generation (Phase 7 Series - Critical Success)
+- **Use TRUE 1:1 approach**: React Server Components via `renderToString()`
+- **Maintain synchronization**: Between `PdfPreview` and `PdfMobileTemplate`
+- **Generate PDFs**: Via `/api/pdf/route.ts` with Puppeteer
+- **CRITICAL**: Ensure typography consistency with explicit CSS mappings
+- **Mobile-optimized**: 420px width, continuous layout (no page breaks)
+- **Eliminate code duplication**: Single components serve both preview and PDF
+- **Dynamic image loading**: Use same API calls as preview for TRUE 1:1 fidelity
+- **🔄 SYNCHRONIZATION RULE**: Any changes to PDF preview components MUST automatically reflect in generated PDF
+
+### Authentication Flow (Phase 4 Success)  
+- Use Supabase Auth with proper middleware
+- Handle both public and protected routes  
+- **CRITICAL**: Use `/signin` not `/login` to avoid 404 errors
+- Implement proper error handling for auth states
+- Follow the established auth patterns in `app/auth/`
+
+### AI Integration (Phase 3.2.6 Token Optimization)
+- **Use optimized prompts**: Achieved 60-70% cost reduction
+- **Temperature: 0.1** for more deterministic outputs
+- **Max tokens: 2000** to prevent over-generation
+- **Token-efficient system prompts**: ~200 tokens vs original 800+
+- Handle AI API errors gracefully with fallbacks
+- Maintain cost-effective usage patterns
+- **Extract only JSON**: No explanations, comments, or verbose output
+
+### Smart Input System (Phase 3.1.5 Success)
+- **AI-powered content extraction**: From text, URLs, and PDFs
+- **Auto-save functionality**: localStorage with timestamp tracking
+- **Comprehensive error handling**: Custom `useExtractFormDataError` hook
+- **Success toast notifications**: User feedback for successful extractions
+- **Draft recovery system**: Automatic detection with user prompts
+- **Retry mechanisms**: Store last attempt parameters for smart retry
+
+## Performance & Optimization Lessons
+
+### Image Loading (Phase 5 Critical Fixes)
+- **API response times**: ~400ms initial, ~22ms cached
+- **Success rate target**: 100% (achieved through proper fallbacks)
+- **Error handling**: Graceful fallbacks prevent broken images
+- **Fallback chain**: Bing API → Picsum → graceful degradation
+
+### PDF Generation Performance
+- **Average generation time**: ~4.9 seconds with real image loading
+- **Mobile optimization**: 420px continuous PDF for mobile consumption
+- **Typography perfection**: Explicit CSS mappings for Manrope font
+- **Component efficiency**: Server-side React rendering optimized
+
+### Cost Optimization
+- **AI token usage**: 60-70% reduction through prompt optimization
+- **Image API efficiency**: Reduced unnecessary requests in optional sections
+- **Caching strategies**: Implement for frequently used images
+
+## Error Handling & Quality Assurance
+
+### Critical Error Prevention
+- **PDF Generation**: Never use invalid Puppeteer parameters
+- **Component Exports**: Maintain consistent import/export patterns
+- **Image Loading**: Always implement fallback mechanisms
+- **Authentication**: Use correct route patterns (`/signin` not `/login`)
+- **Type Safety**: 100% TypeScript coverage with strict mode
+
+### Error Management Patterns
+- **Custom hooks**: `useExtractFormDataError` for centralized error handling
+- **Toast notifications**: User-friendly error feedback
+- **Console logging**: Comprehensive debugging information
+- **Graceful degradation**: Maintain functionality even when services fail
+
+### Testing Requirements
+- **Browser-based testing**: Essential for UI components (not just API testing)
+- **Incremental validation**: Test each change before proceeding
+- **Cross-browser compatibility**: Chrome, Safari, Firefox
+- **Mobile responsiveness**: Verify on actual mobile devices
+
+## File Organization Rules
+- Keep API routes in `app/api/[endpoint]/route.ts`
+- Place page components in `app/[route]/page.tsx`
+- Store utilities in `lib/` with clear naming
+- Group related components in feature folders
+- Use proper imports from `@/` alias
+- **Store custom hooks in `hooks/`** following established patterns
+
+## Development Workflow Best Practices
+
+### Change Management
+- **Make incremental changes**: Small, testable modifications
+- **Preserve existing functionality**: Never remove without explicit approval
+- **Comprehensive testing**: Each change tested before proceeding
+- **User validation**: Regular check-ins during implementation
+- **Rollback planning**: Always have clear revert strategy
+- **🔄 PDF SYNC VALIDATION**: Always verify PDF preview changes reflect in actual generated PDF
+
+### Documentation Requirements
+- **Update reports**: Add to `reports/` folder for significant changes
+- **Document failures**: Create failure reports for learning (see `failure/` folder)
+- **Maintain comprehensive**: Technical documentation for complex systems
+- **Version control**: Use meaningful commit messages following established pattern
+
+### Code Review Standards
+- **Understand existing systems**: Before making modifications
+- **Question removals**: Why is this functionality being removed?
+- **Validate improvements**: Ensure changes actually improve the system
+- **Check dependencies**: Understand component relationships
+
+## Security & Performance Standards
+
+### Security Implementation
+- Validate all user inputs with Zod schemas
+- Use environment variables for API keys
+- Implement proper CORS policies
+- Follow Supabase security best practices
+- **Never expose**: API keys or sensitive data in client-side code
+
+### Performance Monitoring
+- **PDF generation time**: Target <5 seconds
+- **Image loading**: Target <500ms initial, <50ms cached
+- **AI API response**: Target <5 seconds with proper loading states
+- **Mobile responsiveness**: Ensure 420px width optimization
+
+### Quality Gates
+- **TypeScript**: 100% strict mode compliance
+- **Build success**: No warnings or errors
+- **Cross-browser**: Testing on major browsers
+- **Mobile optimization**: Responsive design verification
+- **Performance**: Lighthouse optimization where applicable
+
+## Common Anti-Patterns to Avoid
+- **Over-simplification**: Removing sophisticated systems without understanding
+- **Rushed implementation**: Making extensive changes without proper validation
+- **Ignoring existing patterns**: Not following established successful patterns
+- **Poor testing strategy**: Relying only on API testing instead of full integration
+- **Breaking changes**: Modifying exports/imports without updating references
+- **Removing fallbacks**: Eliminating error handling and graceful degradation
+
+## Success Patterns to Follow
+- **TRUE 1:1 implementation**: Single source of truth for components
+- **Incremental development**: Small, testable improvements
+- **Comprehensive error handling**: Multiple fallback layers
+- **Mobile-first design**: 420px optimization for modern usage
+- **Token optimization**: Cost-effective AI integration
+- **Auto-save functionality**: User experience enhancements
+- **Professional typography**: Consistent Manrope font implementation 
