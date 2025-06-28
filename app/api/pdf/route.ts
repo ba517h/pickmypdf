@@ -67,11 +67,23 @@ export async function POST(request: NextRequest) {
     
     await browser.close();
     
+    // Sanitize filename to remove Unicode characters that break headers
+    const sanitizeFilename = (filename: string): string => {
+      return filename
+        .replace(/[^\w\s-]/g, '') // Remove special characters, keep letters, numbers, spaces, hyphens
+        .replace(/\s+/g, '-')     // Replace spaces with hyphens
+        .replace(/-+/g, '-')      // Replace multiple hyphens with single hyphen
+        .trim()                   // Remove leading/trailing whitespace
+        .substring(0, 50);        // Limit length
+    };
+
+    const safeFilename = sanitizeFilename(formData.title || 'itinerary');
+
     // Return PDF as response
     return new NextResponse(pdfBuffer, {
       headers: {
         'Content-Type': 'application/pdf',
-        'Content-Disposition': `attachment; filename="${formData.title || 'itinerary'}.pdf"`
+        'Content-Disposition': `attachment; filename="${safeFilename}.pdf"`
       }
     });
     

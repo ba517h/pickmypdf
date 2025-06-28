@@ -9,6 +9,44 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      itineraries: {
+        Row: {
+          id: string
+          user_id: string
+          title: string
+          form_data: Json
+          created_at: string
+          updated_at: string
+          last_exported_at: string | null
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          title: string
+          form_data: Json
+          created_at?: string
+          updated_at?: string
+          last_exported_at?: string | null
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          title?: string
+          form_data?: Json
+          created_at?: string
+          updated_at?: string
+          last_exported_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "itineraries_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       users: {
         Row: {
           email: string

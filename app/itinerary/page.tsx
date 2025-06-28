@@ -5,7 +5,7 @@ import { useForm } from "react-hook-form";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { FileText, Clock, MapPin, Star, Calendar, Camera, Settings, Download } from "lucide-react";
+import { FileText, Clock, MapPin, Star, Calendar, Camera, Settings, Download, Archive, Plus } from "lucide-react";
 import { loadDraft, clearDraft, formatDraftTimestamp } from "@/lib/storage";
 import { useToast } from "@/components/ui/use-toast";
 
@@ -16,8 +16,12 @@ import { GalleryStep } from "@/components/itinerary/gallery-step";
 import { OptionalBlocksStep } from "@/components/itinerary/optional-blocks-step";
 import { PdfPreview } from "@/components/itinerary/pdf-preview";
 import { SmartInput } from "@/components/smart-input";
+import { SaveStatusIndicator } from "@/components/ui/save-status-indicator";
+import { SavedItinerariesList } from "@/components/itinerary/saved-itineraries-list";
 
 import { ItineraryFormData } from "@/lib/types";
+import { useItineraryPersistence } from "@/hooks/use-itinerary-persistence";
+import { ItineraryResponse } from "@/lib/schemas";
 
 const sections = [
   { 
@@ -60,9 +64,12 @@ const sections = [
 export default function ItineraryCreatorPage() {
   const [activeSection, setActiveSection] = useState("overview");
   const [showSmartInput, setShowSmartInput] = useState(true);
+  const [showSavedItineraries, setShowSavedItineraries] = useState(false);
   const [showDraftPrompt, setShowDraftPrompt] = useState(false);
   const [draftData, setDraftData] = useState<{ data: ItineraryFormData; timestamp: string } | null>(null);
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
+  const [currentItineraryId, setCurrentItineraryId] = useState<string | null>(null);
+  const [currentItineraryTitle, setCurrentItineraryTitle] = useState<string>("");
   const [formData, setFormData] = useState<ItineraryFormData>({
     title: "",
     destination: "",
@@ -91,6 +98,13 @@ export default function ItineraryCreatorPage() {
   });
 
   const { toast } = useToast();
+
+  // Initialize persistence hook
+  const persistence = useItineraryPersistence({
+    formData,
+    currentItineraryId,
+    autoSaveDelay: 3000, // 3 seconds
+  });
 
   // Check for saved draft on component mount
   useEffect(() => {
@@ -137,6 +151,66 @@ export default function ItineraryCreatorPage() {
     });
   };
 
+  // Handle loading a saved itinerary
+  const handleLoadItinerary = async (id: string) => {
+    const itinerary = await persistence.loadItinerary(id);
+    if (itinerary) {
+      setFormData(itinerary.form_data);
+      setCurrentItineraryId(itinerary.id);
+      setCurrentItineraryTitle(itinerary.title);
+      setShowSavedItineraries(false);
+      setShowSmartInput(false);
+      setActiveSection("overview");
+
+      toast({
+        title: "Itinerary Loaded",
+        description: `"${itinerary.title}" has been loaded for editing.`,
+      });
+    }
+  };
+
+  // Handle creating new itinerary
+  const handleCreateNew = () => {
+    setFormData({
+      title: "",
+      destination: "",
+      duration: "",
+      routing: "",
+      tags: [],
+      tripType: "",
+      mainImage: "",
+      cityImages: [],
+      hotels: [],
+      experiences: [],
+      practicalInfo: {
+        visa: "",
+        currency: "",
+        tips: [],
+        otherInclusions: []
+      },
+      dayWiseItinerary: [],
+      withKids: "",
+      withFamily: "",
+      offbeatSuggestions: ""
+    });
+    setCurrentItineraryId(null);
+    setCurrentItineraryTitle("");
+    setShowSavedItineraries(false);
+    setShowSmartInput(true);
+  };
+
+  // Handle manual save
+  const handleSave = async () => {
+    const title = formData.title || currentItineraryTitle || 'Untitled Itinerary';
+    const result = await persistence.saveManually(title);
+    
+    if (result && !currentItineraryId) {
+      // This was a new itinerary, update our state
+      setCurrentItineraryId(result.id);
+      setCurrentItineraryTitle(result.title);
+    }
+  };
+
   const generatePDF = async () => {
     try {
       setIsGeneratingPdf(true);
@@ -172,6 +246,11 @@ export default function ItineraryCreatorPage() {
       link.click();
       document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
+
+      // Mark as exported if this is a saved itinerary
+      if (currentItineraryId) {
+        await persistence.markAsExported(currentItineraryId);
+      }
 
       toast({
         title: "PDF Generated Successfully",
@@ -263,13 +342,47 @@ export default function ItineraryCreatorPage() {
         {/* Header */}
         <div className="bg-white border-b px-6 py-4">
           <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-bold tracking-tight">Create Your Travel Itinerary</h1>
-              <p className="text-muted-foreground text-sm">
-                Build a comprehensive travel itinerary that can be exported as a PDF
-              </p>
+            <div className="flex items-center gap-4">
+              <div>
+                <h1 className="text-2xl font-bold tracking-tight">
+                  {currentItineraryTitle || formData.title || "Create Your Travel Itinerary"}
+                </h1>
+                <p className="text-muted-foreground text-sm">
+                  {currentItineraryId ? "Editing saved itinerary" : "Build a comprehensive travel itinerary that can be exported as a PDF"}
+                </p>
+              </div>
+              
+              {/* Save Status Indicator */}
+              {!showSmartInput && !showSavedItineraries && (
+                <SaveStatusIndicator
+                  status={persistence.saveStatus}
+                  lastSavedAt={persistence.lastSavedAt}
+                  onSave={handleSave}
+                  className="ml-4"
+                />
+              )}
             </div>
+            
             <div className="flex items-center gap-3">
+              {/* Navigation Buttons */}
+              <Button 
+                onClick={() => setShowSavedItineraries(!showSavedItineraries)}
+                variant="ghost"
+                size="sm"
+              >
+                <Archive className="w-4 h-4 mr-2" />
+                {showSavedItineraries ? "Hide" : "Saved"}
+              </Button>
+              
+              <Button 
+                onClick={handleCreateNew}
+                variant="ghost"
+                size="sm"
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                New
+              </Button>
+              
               <Button 
                 onClick={generatePDF} 
                 variant="outline"
@@ -336,6 +449,16 @@ export default function ItineraryCreatorPage() {
                 Skip and create manually
               </Button>
             </div>
+          </div>
+        )}
+
+        {/* Saved Itineraries List */}
+        {showSavedItineraries && (
+          <div className="bg-white border-b px-6 py-6">
+            <SavedItinerariesList
+              onLoadItinerary={handleLoadItinerary}
+              onDeleteItinerary={persistence.deleteItinerary}
+            />
           </div>
         )}
 

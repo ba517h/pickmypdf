@@ -104,4 +104,42 @@ export type TextRequest = z.infer<typeof TextRequestSchema>;
 export type UrlRequest = z.infer<typeof UrlRequestSchema>;
 export type PdfRequest = z.infer<typeof PdfRequestSchema>;
 export type ExtractRequest = z.infer<typeof ExtractRequestSchema>;
-export type ExtractResponse = z.infer<typeof ExtractResponseSchema>; 
+export type ExtractResponse = z.infer<typeof ExtractResponseSchema>;
+
+// Schemas for itinerary persistence
+export const CreateItinerarySchema = z.object({
+  title: z.string().min(1, "Title is required"),
+  form_data: ItineraryFormDataSchema,
+});
+
+export const UpdateItinerarySchema = z.object({
+  id: z.string().uuid("Invalid itinerary ID"),
+  title: z.string().min(1, "Title is required").optional(),
+  form_data: ItineraryFormDataSchema.optional(),
+});
+
+export const ItineraryResponseSchema = z.object({
+  id: z.string(),
+  user_id: z.string(),
+  title: z.string(),
+  form_data: ItineraryFormDataSchema,
+  created_at: z.string(),
+  updated_at: z.string(),
+  last_exported_at: z.string().nullable(),
+});
+
+export const ItinerariesListResponseSchema = z.array(
+  z.object({
+    id: z.string(),
+    title: z.string(),
+    created_at: z.string(),
+    updated_at: z.string(),
+    last_exported_at: z.string().nullable(),
+  })
+);
+
+// Type exports for persistence
+export type CreateItineraryRequest = z.infer<typeof CreateItinerarySchema>;
+export type UpdateItineraryRequest = z.infer<typeof UpdateItinerarySchema>;
+export type ItineraryResponse = z.infer<typeof ItineraryResponseSchema>;
+export type ItinerariesListResponse = z.infer<typeof ItinerariesListResponseSchema>; 

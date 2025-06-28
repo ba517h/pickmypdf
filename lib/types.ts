@@ -1,4 +1,13 @@
 // Shared types for the application
+import { Database } from "@/database.types";
+
+// Database types for itineraries
+export type ItineraryRow = Database['public']['Tables']['itineraries']['Row'];
+export type ItineraryInsert = Database['public']['Tables']['itineraries']['Insert'];
+export type ItineraryUpdate = Database['public']['Tables']['itineraries']['Update'];
+
+// Save status for UI indicators
+export type SaveStatus = 'idle' | 'saving' | 'saved' | 'error';
 
 export interface ItineraryFormData {
   // Step 1: Overview
