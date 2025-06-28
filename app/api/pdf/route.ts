@@ -1,13 +1,27 @@
 import { NextRequest, NextResponse } from 'next/server';
 import puppeteer from 'puppeteer';
+import React from 'react';
 import { ItineraryFormData } from '@/lib/types';
+import { PdfMobileTemplate } from '@/components/itinerary/pdf-mobile-template';
 
 export async function POST(request: NextRequest) {
   try {
     const formData: ItineraryFormData = await request.json();
     
-    // Generate HTML content for PDF
-    const htmlContent = generatePdfHtml(formData);
+    // Load images using the SAME logic as PdfPreview component
+    const previewImages = await loadPreviewImages(formData);
+    
+    // Render the actual React component to HTML using dynamic import
+    const { renderToString } = await import('react-dom/server');
+    const componentHtml = renderToString(
+      React.createElement(PdfMobileTemplate, {
+        data: formData,
+        previewImages: previewImages
+      })
+    );
+    
+    // Generate complete HTML document
+    const htmlContent = generateHtmlDocument(componentHtml, formData);
     
     // Launch Puppeteer
     const browser = await puppeteer.launch({
@@ -17,21 +31,26 @@ export async function POST(request: NextRequest) {
     
     const page = await browser.newPage();
     
+    // Set mobile viewport for consistent rendering
+    await page.setViewport({
+      width: 600,
+      height: 800,
+      deviceScaleFactor: 2
+    });
+    
     // Set content and wait for images to load
     await page.setContent(htmlContent, {
       waitUntil: 'networkidle0'
     });
     
-    // Generate PDF
+    // Generate mobile-optimized PDF (scroll-style, no page breaks)
     const pdfBuffer = await page.pdf({
-      format: 'A4',
       printBackground: true,
-      margin: {
-        top: '0.5in',
-        right: '0.5in',
-        bottom: '0.5in',
-        left: '0.5in'
-      }
+      preferCSSPageSize: true,
+      margin: { top: '0px', bottom: '0px', left: '0px', right: '0px' },
+      // Mobile-optimized settings - single scrollable document
+      width: '600px',  // Fixed mobile width
+      // Note: No height specified - allows natural content flow
     });
     
     await browser.close();
@@ -53,7 +72,94 @@ export async function POST(request: NextRequest) {
   }
 }
 
-function generatePdfHtml(data: ItineraryFormData): string {
+// REAL image loading - EXACT same logic as PdfPreview component
+async function loadPreviewImages(data: ItineraryFormData) {
+  // Function to get or generate image for preview - EXACT COPY from PdfPreview
+  const getPreviewImage = async (keywords: string, type: 'main' | 'hotel' | 'experience' | 'day' | 'city', index: number = 0): Promise<string> => {
+    try {
+      // Make actual API call to /api/images (same as PdfPreview)
+      const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/images?q=${encodeURIComponent(keywords)}&type=single`);
+      const imageData = await response.json();
+      if (imageData.imageUrl) {
+        return imageData.imageUrl;
+      }
+    } catch (error) {
+      console.log('Failed to fetch image, using fallback');
+    }
+    
+    // Fallback to high-quality placeholder - EXACT COPY from PdfPreview
+    const baseRandoms = {
+      main: 1000,
+      hotel: 2000,
+      experience: 3000,
+      day: 4000,
+      city: 5000
+    };
+    return `https://picsum.photos/600/400?random=${baseRandoms[type] + index}`;
+  };
+
+  const newImages = {
+    main: "",
+    hotels: [] as string[],
+    experiences: [] as string[],
+    days: [] as string[],
+    cities: [] as string[]
+  };
+
+  // Main image - prioritize form data - EXACT COPY from PdfPreview
+  if (data.mainImage) {
+    newImages.main = data.mainImage;
+  } else if (data.destination) {
+    newImages.main = await getPreviewImage(`${data.destination} landscape destination`, 'main');
+  }
+
+  // Hotel images - EXACT COPY from PdfPreview
+  const hotelPromises = data.hotels.map(async (hotel, index) => {
+    if (hotel.image) {
+      return hotel.image;
+    }
+    const keywords = `${hotel.name} ${data.destination || 'luxury'} hotel accommodation`;
+    return await getPreviewImage(keywords, 'hotel', index);
+  });
+  newImages.hotels = await Promise.all(hotelPromises);
+
+  // Experience images - EXACT COPY from PdfPreview
+  const experiencePromises = data.experiences.map(async (experience, index) => {
+    if (experience.image) {
+      return experience.image;
+    }
+    const keywords = `${experience.name} ${data.destination || 'travel'} activity experience`;
+    return await getPreviewImage(keywords, 'experience', index);
+  });
+  newImages.experiences = await Promise.all(experiencePromises);
+
+  // Day images - EXACT COPY from PdfPreview
+  const dayPromises = data.dayWiseItinerary.map(async (day, index) => {
+    if (day.image) {
+      return day.image;
+    }
+    const keywords = `${day.title} ${data.destination || 'travel'} tour activity`;
+    return await getPreviewImage(keywords, 'day', index);
+  });
+  newImages.days = await Promise.all(dayPromises);
+
+  // City images - EXACT COPY from PdfPreview
+  if (data.cityImages && data.cityImages.length > 0) {
+    const cityPromises = data.cityImages.map(async (cityImage, index) => {
+      if (cityImage.image) {
+        return cityImage.image;
+      }
+      const keywords = `${cityImage.city} ${data.destination || 'city'} landmark skyline`;
+      return await getPreviewImage(keywords, 'city', index);
+    });
+    newImages.cities = await Promise.all(cityPromises);
+  }
+
+  return newImages;
+}
+
+// Generate HTML document with the rendered React component
+function generateHtmlDocument(componentHtml: string, data: ItineraryFormData): string {
   return `
     <!DOCTYPE html>
     <html lang="en">
@@ -63,324 +169,27 @@ function generatePdfHtml(data: ItineraryFormData): string {
       <title>${data.title || 'Travel Itinerary'}</title>
       <script src="https://cdn.tailwindcss.com"></script>
       <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700&display=swap');
         
         body {
-          font-family: 'Inter', sans-serif;
+          font-family: 'Manrope', sans-serif;
           -webkit-print-color-adjust: exact;
           print-color-adjust: exact;
+          width: 600px;
+          margin: 0;
+          padding: 0;
         }
         
-        .page-break {
-          page-break-before: always;
-        }
-        
-        .avoid-break {
+        /* Remove page breaks for mobile scroll-style PDF */
+        * {
           page-break-inside: avoid;
-        }
-        
-        .cover-bg {
-          background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
-        }
-        
-        .section-header {
-          border-left: 4px solid #3b82f6;
-          padding-left: 16px;
-        }
-        
-        .day-timeline {
-          border-left: 2px solid #e5e7eb;
-          padding-left: 20px;
-          margin-left: 10px;
-        }
-        
-        .day-marker {
-          width: 12px;
-          height: 12px;
-          background: #3b82f6;
-          border-radius: 50%;
-          margin-left: -26px;
-          margin-top: 8px;
-          position: absolute;
+          break-inside: avoid;
         }
       </style>
     </head>
     <body class="bg-white text-gray-900">
-      ${generateCoverPage(data)}
-      ${generateOverviewPage(data)}
-      ${generateHighlightsPage(data)}
-      ${generateDayWisePage(data)}
-      ${generateOptionalPage(data)}
+      ${componentHtml}
     </body>
     </html>
-  `;
-}
-
-function generateCoverPage(data: ItineraryFormData): string {
-  return `
-    <div class="cover-bg text-white min-h-screen flex flex-col justify-between p-12 avoid-break">
-      <!-- Header -->
-      <div class="flex items-center justify-between">
-        <div>
-          <h2 class="text-sm font-medium tracking-wide uppercase">Travel Itinerary</h2>
-          <div class="text-xs mt-1 opacity-90">Generated by PickMyPDF</div>
-        </div>
-        <svg class="w-12 h-12 opacity-90" fill="currentColor" viewBox="0 0 24 24">
-          <path d="M21 16v-2l-8-5V3.5c0-.83-.67-1.5-1.5-1.5S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z"/>
-        </svg>
-      </div>
-      
-      <!-- Main Title -->
-      <div class="text-center">
-        <h1 class="text-5xl font-bold mb-8 leading-tight">
-          ${data.title || 'Your Travel Itinerary'}
-        </h1>
-        
-        <div class="flex flex-wrap justify-center gap-8 text-lg mb-8">
-          ${data.destination ? `
-            <div class="flex items-center gap-3">
-              <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
-              </svg>
-              <span class="font-medium">${data.destination}</span>
-            </div>
-          ` : ''}
-          ${data.duration ? `
-            <div class="flex items-center gap-3">
-              <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.11 0-1.99.9-1.99 2L3 19c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11zM7 10h5v5H7z"/>
-              </svg>
-              <span class="font-medium">${data.duration}</span>
-            </div>
-          ` : ''}
-        </div>
-        
-        ${data.tags.length > 0 ? `
-          <div class="flex flex-wrap justify-center gap-3">
-            ${data.tags.map(tag => `
-              <span class="px-4 py-2 bg-white bg-opacity-20 rounded-full text-sm font-medium backdrop-blur-sm">
-                ${tag}
-              </span>
-            `).join('')}
-          </div>
-        ` : ''}
-      </div>
-      
-      <!-- Footer -->
-      <div class="text-center">
-        <div class="text-sm opacity-90">
-          Generated on ${new Date().toLocaleDateString('en-US', { 
-            year: 'numeric', 
-            month: 'long', 
-            day: 'numeric' 
-          })}
-        </div>
-      </div>
-    </div>
-  `;
-}
-
-function generateOverviewPage(data: ItineraryFormData): string {
-  return `
-    <div class="page-break p-8">
-      <div class="section-header mb-8">
-        <h2 class="text-3xl font-bold text-gray-800">Trip Overview</h2>
-      </div>
-      
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-        <div class="space-y-6">
-          ${data.destination ? `
-            <div class="avoid-break">
-              <h3 class="text-lg font-semibold text-gray-700 mb-2">Destination</h3>
-              <p class="text-gray-600">${data.destination}</p>
-            </div>
-          ` : ''}
-          
-          ${data.duration ? `
-            <div class="avoid-break">
-              <h3 class="text-lg font-semibold text-gray-700 mb-2">Duration</h3>
-              <p class="text-gray-600">${data.duration}</p>
-            </div>
-          ` : ''}
-          
-          ${data.routing ? `
-            <div class="avoid-break">
-              <h3 class="text-lg font-semibold text-gray-700 mb-2">Routing</h3>
-              <p class="text-gray-600">${data.routing}</p>
-            </div>
-          ` : ''}
-          
-          ${data.tripType ? `
-            <div class="avoid-break">
-              <h3 class="text-lg font-semibold text-gray-700 mb-2">Trip Type</h3>
-              <p class="text-gray-600">${data.tripType}</p>
-            </div>
-          ` : ''}
-        </div>
-        
-        ${data.mainImage ? `
-          <div class="avoid-break">
-            <img src="${data.mainImage}" alt="Main destination" class="w-full h-64 object-cover rounded-lg shadow-lg">
-          </div>
-        ` : ''}
-      </div>
-    </div>
-  `;
-}
-
-function generateHighlightsPage(data: ItineraryFormData): string {
-  return `
-    <div class="page-break p-8">
-      <div class="section-header mb-8">
-        <h2 class="text-3xl font-bold text-gray-800">Highlights</h2>
-      </div>
-      
-      ${data.hotels.length > 0 ? `
-        <div class="mb-8 avoid-break">
-          <h3 class="text-xl font-semibold text-gray-700 mb-4">Accommodations</h3>
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            ${data.hotels.map(hotel => `
-              <div class="bg-gray-50 p-4 rounded-lg avoid-break">
-                <h4 class="font-medium text-gray-800">${hotel.name}</h4>
-                ${hotel.image ? `
-                  <img src="${hotel.image}" alt="${hotel.name}" class="w-full h-32 object-cover rounded mt-2">
-                ` : ''}
-              </div>
-            `).join('')}
-          </div>
-        </div>
-      ` : ''}
-      
-      ${data.experiences.length > 0 ? `
-        <div class="mb-8 avoid-break">
-          <h3 class="text-xl font-semibold text-gray-700 mb-4">Experiences</h3>
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            ${data.experiences.map(experience => `
-              <div class="bg-gray-50 p-4 rounded-lg avoid-break">
-                <h4 class="font-medium text-gray-800">${experience.name}</h4>
-                ${experience.image ? `
-                  <img src="${experience.image}" alt="${experience.name}" class="w-full h-32 object-cover rounded mt-2">
-                ` : ''}
-              </div>
-            `).join('')}
-          </div>
-        </div>
-      ` : ''}
-      
-      ${(data.practicalInfo.visa || data.practicalInfo.currency || data.practicalInfo.tips.length > 0) ? `
-        <div class="avoid-break">
-          <h3 class="text-xl font-semibold text-gray-700 mb-4">Practical Information</h3>
-          <div class="bg-blue-50 p-6 rounded-lg">
-            ${data.practicalInfo.visa ? `
-              <div class="mb-4">
-                <strong class="text-gray-800">Visa Requirements:</strong>
-                <p class="text-gray-600 mt-1">${data.practicalInfo.visa}</p>
-              </div>
-            ` : ''}
-            ${data.practicalInfo.currency ? `
-              <div class="mb-4">
-                <strong class="text-gray-800">Currency:</strong>
-                <p class="text-gray-600 mt-1">${data.practicalInfo.currency}</p>
-              </div>
-            ` : ''}
-            ${data.practicalInfo.tips.length > 0 ? `
-              <div>
-                <strong class="text-gray-800">Travel Tips:</strong>
-                <ul class="text-gray-600 mt-1 list-disc list-inside">
-                  ${data.practicalInfo.tips.map(tip => `<li>${tip}</li>`).join('')}
-                </ul>
-              </div>
-            ` : ''}
-          </div>
-        </div>
-      ` : ''}
-    </div>
-  `;
-}
-
-function generateDayWisePage(data: ItineraryFormData): string {
-  if (data.dayWiseItinerary.length === 0) return '';
-  
-  return `
-    <div class="page-break p-8">
-      <div class="section-header mb-8">
-        <h2 class="text-3xl font-bold text-gray-800">Day-wise Itinerary</h2>
-      </div>
-      
-      <div class="space-y-8">
-        ${data.dayWiseItinerary.map(day => `
-          <div class="avoid-break">
-            <div class="day-timeline relative">
-              <div class="day-marker"></div>
-              <div class="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
-                <h3 class="text-xl font-semibold text-gray-800 mb-3">Day ${day.day}: ${day.title}</h3>
-                <div class="text-gray-600 whitespace-pre-wrap">${day.content}</div>
-                ${day.image ? `
-                  <img src="${day.image}" alt="Day ${day.day}" class="w-full h-48 object-cover rounded-lg mt-4">
-                ` : ''}
-              </div>
-            </div>
-          </div>
-        `).join('')}
-      </div>
-    </div>
-  `;
-}
-
-function generateOptionalPage(data: ItineraryFormData): string {
-  const hasOptionalContent = data.withKids || data.withFamily || data.offbeatSuggestions;
-  
-  if (!hasOptionalContent) return '';
-  
-  return `
-    <div class="page-break p-8">
-      <div class="section-header mb-8">
-        <h2 class="text-3xl font-bold text-gray-800">Additional Recommendations</h2>
-      </div>
-      
-      <div class="space-y-8">
-        ${data.withKids ? `
-          <div class="avoid-break">
-            <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-6">
-              <h3 class="text-xl font-semibold text-yellow-800 mb-3 flex items-center gap-2">
-                <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M16 4c0-1.11.89-2 2-2s2 .89 2 2-.89 2-2 2-2-.89-2-2zm4 18v-6h2.5l-2.54-7.63A1.988 1.988 0 0 0 18.06 7c-.8 0-1.54.5-1.85 1.26l-1.92 5.74H9.71l-1.92-5.74C7.48 7.5 6.74 7 5.94 7c-.8 0-1.54.5-1.85 1.26L1.55 16H4v6h2v-6h2.5v6H10v-6h2.5v6H14v-6h2.5v6H18z"/>
-                </svg>
-                Traveling with Kids
-              </h3>
-              <div class="text-yellow-700 whitespace-pre-wrap">${data.withKids}</div>
-            </div>
-          </div>
-        ` : ''}
-        
-        ${data.withFamily ? `
-          <div class="avoid-break">
-            <div class="bg-pink-50 border border-pink-200 rounded-lg p-6">
-              <h3 class="text-xl font-semibold text-pink-800 mb-3 flex items-center gap-2">
-                <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
-                </svg>
-                Family-Friendly Options
-              </h3>
-              <div class="text-pink-700 whitespace-pre-wrap">${data.withFamily}</div>
-            </div>
-          </div>
-        ` : ''}
-        
-        ${data.offbeatSuggestions ? `
-          <div class="avoid-break">
-            <div class="bg-green-50 border border-green-200 rounded-lg p-6">
-              <h3 class="text-xl font-semibold text-green-800 mb-3 flex items-center gap-2">
-                <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M14.19 14.19l6-6c0.78-0.78 0.78-2.05 0-2.83l-2.83-2.83c-0.78-0.78-2.05-0.78-2.83 0l-6 6c-0.78 0.78-0.78 2.05 0 2.83l2.83 2.83c0.78 0.78 2.05 0.78 2.83 0zm-8.1 4.9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2z"/>
-                </svg>
-                Off the Beaten Path
-              </h3>
-              <div class="text-green-700 whitespace-pre-wrap">${data.offbeatSuggestions}</div>
-            </div>
-          </div>
-        ` : ''}
-      </div>
-    </div>
   `;
 } 

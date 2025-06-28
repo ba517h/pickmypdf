@@ -87,7 +87,7 @@ export function GalleryStep({ data, onUpdate, form }: GalleryStepProps) {
       <div className="space-y-2">
         <h2 className="text-xl font-semibold">Destination Gallery</h2>
         <p className="text-muted-foreground">
-          Add beautiful images to showcase your destination's highlights, activities, and landmarks.
+          Add beautiful images to showcase your destination&apos;s highlights, activities, and landmarks.
         </p>
       </div>
 
