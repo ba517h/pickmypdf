@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -65,5 +67,44 @@
   }
   body {
     @apply bg-background text-foreground;
+    font-family: 'Manrope', sans-serif;
   }
+}
+
+/* Ensure proper font weight rendering with specific targeting */
+.font-manrope .font-normal,
+.font-normal { 
+  font-weight: 400 !important; 
+  font-family: 'Manrope', sans-serif !important;
+}
+
+.font-manrope .font-medium,
+.font-medium { 
+  font-weight: 500 !important; 
+  font-family: 'Manrope', sans-serif !important;
+}
+
+.font-manrope .font-semibold,
+.font-semibold { 
+  font-weight: 600 !important; 
+  font-family: 'Manrope', sans-serif !important;
+}
+
+.font-manrope .font-bold,
+.font-bold { 
+  font-weight: 700 !important; 
+  font-family: 'Manrope', sans-serif !important;
+}
+
+.font-manrope .font-extrabold,
+.font-extrabold { 
+  font-weight: 800 !important; 
+  font-family: 'Manrope', sans-serif !important;
+}
+
+/* Force font rendering quality */
+* {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
 }

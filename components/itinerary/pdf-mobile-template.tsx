@@ -107,7 +107,7 @@ export function PdfMobileTemplate({ data, previewImages }: PdfMobileTemplateProp
         )}
         
         {/* Content - positioned above background */}
-        <div className="relative z-10 flex flex-col justify-between h-full p-12">
+        <div className="relative z-10 flex flex-col justify-between h-full p-4">
           {/* Top Section - Header Info */}
           <div className="flex items-center justify-between">
             <div>
@@ -160,7 +160,7 @@ export function PdfMobileTemplate({ data, previewImages }: PdfMobileTemplateProp
         <div className="p-6 space-y-8">
           {/* Overview Section - EXACT COPY */}
           <div className="space-y-4">
-            <h3 className="font-semibold text-lg text-gray-800 flex items-center gap-3 pb-2 border-b border-gray-200">
+            <h3 className="font-bold text-lg text-gray-800 flex items-center gap-3 pb-2 border-b border-gray-200">
               <div className="w-1 h-6 bg-blue-600 rounded" />
               Overview
             </h3>
@@ -197,7 +197,7 @@ export function PdfMobileTemplate({ data, previewImages }: PdfMobileTemplateProp
           {/* Hotels Section - EXACT COPY */}
           {data.hotels.length > 0 && (
             <div className="space-y-4">
-              <h3 className="font-semibold text-lg text-gray-800 flex items-center gap-3 pb-2 border-b border-gray-200">
+              <h3 className="font-bold text-lg text-gray-800 flex items-center gap-3 pb-2 border-b border-gray-200">
                 <div className="w-1 h-6 bg-green-600 rounded" />
                 Accommodations
               </h3>
@@ -211,7 +211,7 @@ export function PdfMobileTemplate({ data, previewImages }: PdfMobileTemplateProp
                         className="w-full h-full object-cover"
                       />
                     </div>
-                    <div className="text-base font-semibold text-gray-900">{hotel.name}</div>
+                    <div className="text-base font-medium text-gray-900">{hotel.name}</div>
                     <div className="text-sm text-gray-600 mt-1">Premium accommodation</div>
                   </div>
                 ))}
@@ -227,7 +227,7 @@ export function PdfMobileTemplate({ data, previewImages }: PdfMobileTemplateProp
           {/* Experiences Section - EXACT COPY */}
           {data.experiences.length > 0 && (
             <div className="space-y-4">
-              <h3 className="font-semibold text-lg text-gray-800 flex items-center gap-3 pb-2 border-b border-gray-200">
+              <h3 className="font-bold text-lg text-gray-800 flex items-center gap-3 pb-2 border-b border-gray-200">
                 <div className="w-1 h-6 bg-orange-600 rounded" />
                 Experiences & Activities
               </h3>
@@ -242,7 +242,7 @@ export function PdfMobileTemplate({ data, previewImages }: PdfMobileTemplateProp
                       />
                     </div>
                     <div className="flex-1">
-                      <div className="text-base font-semibold text-gray-900 mb-1">{experience.name}</div>
+                      <div className="text-base font-medium text-gray-900 mb-1">{experience.name}</div>
                       <div className="flex items-center gap-1 mb-2">
                         {[...Array(5)].map((_, i) => (
                           <StarIcon key={i} />
@@ -265,7 +265,7 @@ export function PdfMobileTemplate({ data, previewImages }: PdfMobileTemplateProp
           {/* Day-wise Itinerary - EXACT COPY */}
           {data.dayWiseItinerary.length > 0 && (
             <div className="space-y-4">
-              <h3 className="font-semibold text-lg text-gray-800 flex items-center gap-3 pb-2 border-b border-gray-200">
+              <h3 className="font-bold text-lg text-gray-800 flex items-center gap-3 pb-2 border-b border-gray-200">
                 <div className="w-1 h-6 bg-purple-600 rounded" />
                 Daily Itinerary
               </h3>
@@ -283,7 +283,7 @@ export function PdfMobileTemplate({ data, previewImages }: PdfMobileTemplateProp
                       </div>
                       
                       <div className="flex-1 pb-6">
-                        <div className="text-base font-semibold text-gray-900 mb-2">Day {day.day}: {day.title}</div>
+                        <div className="text-base font-medium text-gray-900 mb-2">Day {day.day}: {day.title}</div>
                         
                         <div className="h-32 bg-gray-200 rounded-lg mb-3 overflow-hidden">
                           <img 
@@ -312,7 +312,7 @@ export function PdfMobileTemplate({ data, previewImages }: PdfMobileTemplateProp
           {/* Destination Gallery - EXACT COPY */}
           {((data.destinationGallery && data.destinationGallery.length > 0) || data.destination) && (
             <div className="space-y-4">
-              <h3 className="font-semibold text-lg text-gray-800 flex items-center gap-3 pb-2 border-b border-gray-200">
+              <h3 className="font-bold text-lg text-gray-800 flex items-center gap-3 pb-2 border-b border-gray-200">
                 <div className="w-1 h-6 bg-teal-600 rounded" />
                 Destination Gallery
               </h3>
@@ -369,7 +369,7 @@ export function PdfMobileTemplate({ data, previewImages }: PdfMobileTemplateProp
           {/* Practical Information - EXACT COPY */}
           {(data.practicalInfo.visa || data.practicalInfo.currency || data.practicalInfo.tips.length > 0) && (
             <div className="space-y-4">
-              <h3 className="font-semibold text-lg text-gray-800 flex items-center gap-3 pb-2 border-b border-gray-200">
+              <h3 className="font-bold text-lg text-gray-800 flex items-center gap-3 pb-2 border-b border-gray-200">
                 <div className="w-1 h-6 bg-blue-600 rounded" />
                 Practical Information
               </h3>
@@ -403,7 +403,7 @@ export function PdfMobileTemplate({ data, previewImages }: PdfMobileTemplateProp
           {/* Optional Sections - EXACT COPY */}
           {(data.withKids || data.withFamily || data.offbeatSuggestions) && (
             <div className="space-y-4">
-              <h3 className="font-semibold text-lg text-gray-800 flex items-center gap-3 pb-2 border-b border-gray-200">
+              <h3 className="font-bold text-lg text-gray-800 flex items-center gap-3 pb-2 border-b border-gray-200">
                 <div className="w-1 h-6 bg-indigo-600 rounded" />
                 Special Recommendations
               </h3>
@@ -412,7 +412,7 @@ export function PdfMobileTemplate({ data, previewImages }: PdfMobileTemplateProp
                   <div className="flex items-start gap-3 bg-blue-50 border border-blue-200 rounded-lg p-4">
                     <UsersIcon />
                     <div>
-                      <div className="font-semibold text-blue-900">Family with Kids</div>
+                      <div className="font-medium text-blue-900">Family with Kids</div>
                       <div className="text-sm text-blue-800 mt-1">Special activities and recommendations for families traveling with children</div>
                     </div>
                   </div>
@@ -421,7 +421,7 @@ export function PdfMobileTemplate({ data, previewImages }: PdfMobileTemplateProp
                   <div className="flex items-start gap-3 bg-red-50 border border-red-200 rounded-lg p-4">
                     <HeartIcon />
                     <div>
-                      <div className="font-semibold text-red-900">Family-Friendly Options</div>
+                      <div className="font-medium text-red-900">Family-Friendly Options</div>
                       <div className="text-sm text-red-800 mt-1">Carefully curated family-friendly activities and dining options</div>
                     </div>
                   </div>
@@ -430,7 +430,7 @@ export function PdfMobileTemplate({ data, previewImages }: PdfMobileTemplateProp
                   <div className="flex items-start gap-3 bg-green-50 border border-green-200 rounded-lg p-4">
                     <CompassIcon />
                     <div>
-                      <div className="font-semibold text-green-900">Offbeat Discoveries</div>
+                      <div className="font-medium text-green-900">Offbeat Discoveries</div>
                       <div className="text-sm text-green-800 mt-1">Hidden gems and unique experiences off the beaten path</div>
                     </div>
                   </div>
