@@ -193,6 +193,37 @@ function generateHtmlDocument(componentHtml: string, data: ItineraryFormData): s
           overflow-x: hidden;
         }
         
+        /* CRITICAL: Map font-manrope class to Manrope font family */
+        .font-manrope {
+          font-family: 'Manrope', sans-serif !important;
+        }
+        
+        /* CRITICAL: Ensure all font weights match exactly with web preview */
+        .font-light { font-weight: 300 !important; }
+        .font-normal { font-weight: 400 !important; }
+        .font-medium { font-weight: 500 !important; }
+        .font-semibold { font-weight: 600 !important; }
+        .font-bold { font-weight: 700 !important; }
+        
+        /* CRITICAL: Ensure text sizes match exactly with web preview */
+        .text-xs { font-size: 0.75rem !important; }
+        .text-sm { font-size: 0.875rem !important; }
+        .text-base { font-size: 1rem !important; }
+        .text-lg { font-size: 1.125rem !important; }
+        .text-xl { font-size: 1.25rem !important; }
+        .text-2xl { font-size: 1.5rem !important; }
+        .text-3xl { font-size: 1.875rem !important; }
+        .text-4xl { font-size: 2.25rem !important; }
+        
+        /* CRITICAL: Ensure letter spacing matches exactly */
+        .tracking-wide { letter-spacing: 0.025em !important; }
+        .tracking-tight { letter-spacing: -0.025em !important; }
+        
+        /* CRITICAL: Ensure line heights match exactly */
+        .leading-tight { line-height: 1.25 !important; }
+        .leading-relaxed { line-height: 1.625 !important; }
+        .leading-none { line-height: 1 !important; }
+        
         /* FORCE continuous mobile layout - ELIMINATE ALL page breaks */
         * {
           page-break-inside: avoid !important;
