@@ -82,7 +82,7 @@ const Badge = ({ children, className, ...props }: { children: React.ReactNode; c
 
 export function PdfMobileTemplate({ data, previewImages }: PdfMobileTemplateProps) {
   return (
-    <div className="h-fit overflow-hidden shadow-lg font-manrope">
+    <div className="h-fit overflow-hidden shadow-lg font-manrope w-[420px]">
       {/* Header Section with Background Image - Cover Page - EXACT COPY */}
       <div className="relative py-6 px-4 text-white overflow-hidden flex flex-col justify-between">
         {/* Background Image */}

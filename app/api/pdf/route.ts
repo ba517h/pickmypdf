@@ -33,7 +33,7 @@ export async function POST(request: NextRequest) {
     
     // Set mobile viewport for consistent rendering
     await page.setViewport({
-      width: 600,
+      width: 420,
       height: 800,
       deviceScaleFactor: 2
     });
@@ -43,14 +43,26 @@ export async function POST(request: NextRequest) {
       waitUntil: 'networkidle0'
     });
     
-    // Generate mobile-optimized PDF (scroll-style, no page breaks)
+    // Get actual content height for truly continuous PDF
+    const contentHeight = await page.evaluate(() => {
+      return Math.max(
+        document.body.scrollHeight,
+        document.body.offsetHeight,
+        document.documentElement.clientHeight,
+        document.documentElement.scrollHeight,
+        document.documentElement.offsetHeight
+      );
+    });
+
+    // Generate truly continuous PDF - single page with exact content height
     const pdfBuffer = await page.pdf({
       printBackground: true,
-      preferCSSPageSize: true,
+      preferCSSPageSize: false,  // Don't use CSS page size
       margin: { top: '0px', bottom: '0px', left: '0px', right: '0px' },
-      // Mobile-optimized settings - single scrollable document
-      width: '600px',  // Fixed mobile width
-      // Note: No height specified - allows natural content flow
+      // Force single continuous page with exact dimensions
+      width: '420px',
+      height: `${contentHeight}px`,  // Exact height = no page breaks!
+      pageRanges: '1',  // Single page only
     });
     
     await browser.close();
@@ -175,15 +187,34 @@ function generateHtmlDocument(componentHtml: string, data: ItineraryFormData): s
           font-family: 'Manrope', sans-serif;
           -webkit-print-color-adjust: exact;
           print-color-adjust: exact;
-          width: 600px;
+          width: 420px;
           margin: 0;
           padding: 0;
+          overflow-x: hidden;
         }
         
-        /* Remove page breaks for mobile scroll-style PDF */
+        /* FORCE continuous mobile layout - ELIMINATE ALL page breaks */
         * {
-          page-break-inside: avoid;
-          break-inside: avoid;
+          page-break-inside: avoid !important;
+          break-inside: avoid !important;
+          page-break-before: avoid !important;
+          page-break-after: avoid !important;
+        }
+        
+        /* Override any existing page break classes */
+        .page-break, .avoid-break, .page-break-before, .page-break-after {
+          page-break-before: avoid !important;
+          page-break-after: avoid !important;
+          page-break-inside: avoid !important;
+          break-before: avoid !important;
+          break-after: avoid !important;
+          break-inside: avoid !important;
+        }
+        
+        /* Ensure content flows continuously */
+        body, html {
+          height: auto !important;
+          min-height: auto !important;
         }
       </style>
     </head>

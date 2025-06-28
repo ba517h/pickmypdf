@@ -125,7 +125,7 @@ export function PdfPreview({ data }: PdfPreviewProps) {
   }, [data]);
 
   return (
-    <Card className="h-fit overflow-hidden shadow-lg font-manrope">
+    <Card className="h-fit overflow-hidden shadow-lg font-manrope w-[420px] mx-auto">
       {/* Header Section with Background Image - Cover Page */}
       <div className="relative py-6 px-4 text-white overflow-hidden flex flex-col justify-between">
         {/* Background Image */}
