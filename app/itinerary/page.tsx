@@ -5,7 +5,7 @@ import { useForm } from "react-hook-form";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { FileText, Clock, MapPin, Star, Calendar, Camera, Settings } from "lucide-react";
+import { FileText, Clock, MapPin, Star, Calendar, Camera, Settings, Download } from "lucide-react";
 import { loadDraft, clearDraft, formatDraftTimestamp } from "@/lib/storage";
 import { useToast } from "@/components/ui/use-toast";
 
@@ -62,6 +62,7 @@ export default function ItineraryCreatorPage() {
   const [showSmartInput, setShowSmartInput] = useState(true);
   const [showDraftPrompt, setShowDraftPrompt] = useState(false);
   const [draftData, setDraftData] = useState<{ data: ItineraryFormData; timestamp: string } | null>(null);
+  const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
   const [formData, setFormData] = useState<ItineraryFormData>({
     title: "",
     destination: "",
@@ -136,10 +137,57 @@ export default function ItineraryCreatorPage() {
     });
   };
 
-  const generatePDF = () => {
-    console.log("Generating PDF with data:", formData);
-    // TODO: Implement PDF generation
-    alert("PDF generation will be implemented in the next phase!");
+  const generatePDF = async () => {
+    try {
+      setIsGeneratingPdf(true);
+      
+      // Validate required fields
+      if (!formData.title || !formData.destination) {
+        toast({
+          title: "Missing Information",
+          description: "Please provide at least a title and destination before generating PDF.",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      const response = await fetch('/api/pdf', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to generate PDF');
+      }
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `${formData.title || 'itinerary'}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+
+      toast({
+        title: "PDF Generated Successfully",
+        description: "Your travel itinerary has been downloaded as a PDF.",
+      });
+
+    } catch (error) {
+      console.error('PDF generation error:', error);
+      toast({
+        title: "PDF Generation Failed",
+        description: "There was an error generating your PDF. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsGeneratingPdf(false);
+    }
   };
 
   const renderActiveSection = () => {
@@ -214,10 +262,34 @@ export default function ItineraryCreatorPage() {
       <div className="w-full">
         {/* Header */}
         <div className="bg-white border-b px-6 py-4">
-          <h1 className="text-2xl font-bold tracking-tight">Create Your Travel Itinerary</h1>
-          <p className="text-muted-foreground text-sm">
-            Build a comprehensive travel itinerary that can be exported as a PDF
-          </p>
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-2xl font-bold tracking-tight">Create Your Travel Itinerary</h1>
+              <p className="text-muted-foreground text-sm">
+                Build a comprehensive travel itinerary that can be exported as a PDF
+              </p>
+            </div>
+            <div className="flex items-center gap-3">
+              <Button 
+                onClick={generatePDF} 
+                variant="outline"
+                disabled={!formData.title || !formData.destination || isGeneratingPdf}
+                className="hidden md:flex"
+              >
+                {isGeneratingPdf ? (
+                  <>
+                    <div className="w-4 h-4 mr-2 animate-spin rounded-full border-2 border-foreground border-t-transparent" />
+                    Generating...
+                  </>
+                ) : (
+                  <>
+                    <Download className="w-4 h-4 mr-2" />
+                    Download PDF
+                  </>
+                )}
+              </Button>
+            </div>
+          </div>
         </div>
 
         {/* Draft prompt modal */}
@@ -311,17 +383,26 @@ export default function ItineraryCreatorPage() {
                     );
                   })}
                   
-                                     {/* Generate PDF Button */}
-                   <div className="pt-4 mt-4 border-t">
-                     <Button 
-                       onClick={generatePDF} 
-                       className="w-full"
-                       disabled={!formData.title || !formData.destination}
-                     >
-                       <FileText className="w-4 h-4 mr-2" />
-                       Generate PDF
-                     </Button>
-                   </div>
+                                                       {/* Generate PDF Button */}
+                  <div className="pt-4 mt-4 border-t">
+                    <Button 
+                      onClick={generatePDF} 
+                      className="w-full"
+                      disabled={!formData.title || !formData.destination || isGeneratingPdf}
+                    >
+                      {isGeneratingPdf ? (
+                        <>
+                          <div className="w-4 h-4 mr-2 animate-spin rounded-full border-2 border-background border-t-foreground" />
+                          Generating...
+                        </>
+                      ) : (
+                        <>
+                          <Download className="w-4 h-4 mr-2" />
+                          Download PDF
+                        </>
+                      )}
+                    </Button>
+                  </div>
                  </div>
                </div>
              </div>
