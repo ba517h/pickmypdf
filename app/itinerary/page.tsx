@@ -2,10 +2,11 @@
 
 import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
+import { useSearchParams, useRouter } from "next/navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { FileText, Clock, MapPin, Star, Calendar, Camera, Settings, Download, Archive, Plus } from "lucide-react";
+import { FileText, Clock, MapPin, Star, Calendar, Camera, Settings, Download, Archive, Plus, X } from "lucide-react";
 import { loadDraft, clearDraft, formatDraftTimestamp } from "@/lib/storage";
 import { useToast } from "@/components/ui/use-toast";
 
@@ -62,6 +63,10 @@ const sections = [
 ];
 
 export default function ItineraryCreatorPage() {
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const draftId = searchParams.get('draftId');
+  
   const [activeSection, setActiveSection] = useState("overview");
   const [showSmartInput, setShowSmartInput] = useState(true);
   const [showSavedItineraries, setShowSavedItineraries] = useState(false);
@@ -106,14 +111,43 @@ export default function ItineraryCreatorPage() {
     autoSaveDelay: 3000, // 3 seconds
   });
 
-  // Check for saved draft on component mount
+  // Check for saved draft on component mount or load itinerary from draftId
   useEffect(() => {
-    const draft = loadDraft();
-    if (draft) {
-      setDraftData(draft);
-      setShowDraftPrompt(true);
+    if (draftId) {
+      // Load specific itinerary from URL parameter
+      const loadItineraryFromUrl = async () => {
+        const itinerary = await persistence.loadItinerary(draftId);
+        if (itinerary) {
+          setFormData(itinerary.form_data);
+          setCurrentItineraryId(itinerary.id);
+          setCurrentItineraryTitle(itinerary.title);
+          setShowSmartInput(false);
+          setActiveSection("overview");
+
+          toast({
+            title: "Itinerary Loaded",
+            description: `"${itinerary.title}" has been loaded for editing.`,
+          });
+        } else {
+          toast({
+            title: "Load Failed",
+            description: "Could not load the requested itinerary.",
+            variant: "destructive",
+          });
+        }
+      };
+      
+      loadItineraryFromUrl();
+    } else {
+      // Check for local draft only if no draftId in URL
+      const draft = loadDraft();
+      if (draft) {
+        setDraftData(draft);
+        setShowDraftPrompt(true);
+      }
     }
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [draftId]); // Removed persistence and toast from dependencies to prevent infinite loop
 
   const updateFormData = (stepData: Partial<ItineraryFormData>) => {
     setFormData(prev => ({ ...prev, ...stepData }));
@@ -272,51 +306,20 @@ export default function ItineraryCreatorPage() {
   const renderActiveSection = () => {
     switch (activeSection) {
       case "overview":
-        return (
-          <OverviewStep
-            data={formData}
-            onUpdate={updateFormData}
-            form={form}
-          />
-        );
+        return <OverviewStep data={formData} onUpdate={updateFormData} form={form} />;
       case "highlights":
-        return (
-          <HighlightsStep
-            data={formData}
-            onUpdate={updateFormData}
-            form={form}
-          />
-        );
+        return <HighlightsStep data={formData} onUpdate={updateFormData} form={form} />;
       case "daywise":
-        return (
-          <DayWiseStep
-            data={formData}
-            onUpdate={updateFormData}
-            form={form}
-          />
-        );
+        return <DayWiseStep data={formData} onUpdate={updateFormData} form={form} />;
       case "gallery":
-        return (
-          <GalleryStep
-            data={formData}
-            onUpdate={updateFormData}
-            form={form}
-          />
-        );
+        return <GalleryStep data={formData} onUpdate={updateFormData} form={form} />;
       case "optional":
-        return (
-          <OptionalBlocksStep
-            data={formData}
-            onUpdate={updateFormData}
-            form={form}
-          />
-        );
+        return <OptionalBlocksStep data={formData} onUpdate={updateFormData} form={form} />;
       default:
-        return null;
+        return <OverviewStep data={formData} onUpdate={updateFormData} form={form} />;
     }
   };
 
-  // Calculate completion status for each section
   const getSectionStatus = (sectionId: string) => {
     switch (sectionId) {
       case "overview":
@@ -334,226 +337,159 @@ export default function ItineraryCreatorPage() {
     }
   };
 
-  const currentSection = sections.find(section => section.id === activeSection);
+  const closePage = () => {
+    router.push('/dashboard');
+  };
+
+  if (showSmartInput) {
+    return (
+      <div className="min-h-screen bg-gray-50 font-manrope">
+        <SmartInput onDataParsed={handleDataParsed} />
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="w-full">
-        {/* Header */}
-        <div className="bg-white border-b px-6 py-4">
+    <div className="min-h-screen bg-white font-manrope">
+      {/* Header */}
+      <div className="border-b border-gray-200 bg-white">
+        <div className="max-w-full px-6 py-4">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <div>
-                <h1 className="text-2xl font-bold tracking-tight">
-                  {currentItineraryTitle || formData.title || "Create Your Travel Itinerary"}
-                </h1>
-                <p className="text-muted-foreground text-sm">
-                  {currentItineraryId ? "Editing saved itinerary" : "Build a comprehensive travel itinerary that can be exported as a PDF"}
-                </p>
-              </div>
-              
-              {/* Save Status Indicator */}
-              {!showSmartInput && !showSavedItineraries && (
-                <SaveStatusIndicator
-                  status={persistence.saveStatus}
-                  lastSavedAt={persistence.lastSavedAt}
-                  onSave={handleSave}
-                  className="ml-4"
-                />
-              )}
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">Create Your Travel Itinerary</h1>
+              <p className="text-gray-600 mt-1">Build a comprehensive travel itinerary that can be exported as a PDF</p>
             </div>
             
-            <div className="flex items-center gap-3">
-              {/* Navigation Buttons */}
-              <Button 
-                onClick={() => setShowSavedItineraries(!showSavedItineraries)}
-                variant="ghost"
-                size="sm"
-              >
-                <Archive className="w-4 h-4 mr-2" />
-                {showSavedItineraries ? "Hide" : "Saved"}
-              </Button>
+            <div className="flex items-center space-x-4">
+              <SaveStatusIndicator 
+                status={persistence.saveStatus}
+                lastSavedAt={persistence.lastSavedAt}
+                onSave={handleSave}
+              />
               
-              <Button 
+              <Button
+                variant="outline"
                 onClick={handleCreateNew}
-                variant="ghost"
-                size="sm"
+                className="flex items-center"
               >
-                <Plus className="w-4 h-4 mr-2" />
+                <Plus className="h-4 w-4 mr-2" />
                 New
               </Button>
               
-              <Button 
-                onClick={generatePDF} 
-                variant="outline"
-                disabled={!formData.title || !formData.destination || isGeneratingPdf}
-                className="hidden md:flex"
+              <Button
+                onClick={generatePDF}
+                disabled={isGeneratingPdf || !formData.title || !formData.destination}
+                className="bg-black hover:bg-gray-800 text-white"
               >
                 {isGeneratingPdf ? (
-                  <>
-                    <div className="w-4 h-4 mr-2 animate-spin rounded-full border-2 border-foreground border-t-transparent" />
-                    Generating...
-                  </>
+                  <div className="h-4 w-4 mr-2 border-2 border-white border-t-transparent rounded-full animate-spin" />
                 ) : (
-                  <>
-                    <Download className="w-4 h-4 mr-2" />
-                    Download PDF
-                  </>
+                  <Download className="h-4 w-4 mr-2" />
                 )}
+                Download PDF
+              </Button>
+              
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={closePage}
+                className="h-8 w-8"
+              >
+                <X className="h-4 w-4" />
               </Button>
             </div>
           </div>
         </div>
+      </div>
 
-        {/* Draft prompt modal */}
-        {showDraftPrompt && draftData && (
-          <div className="bg-amber-50 border-b border-amber-200 px-6 py-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <div className="flex items-center gap-2 text-amber-800 font-medium">
-                  <Clock className="w-4 h-4" />
-                  Draft Found
-                </div>
-                <p className="text-amber-700 text-sm mt-1">
-                  We found a saved draft from {formatDraftTimestamp(draftData.timestamp)}. 
-                  Would you like to continue where you left off?
+      {/* Draft Notification */}
+      {showDraftPrompt && draftData && (
+        <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4">
+          <div className="flex items-center justify-between">
+            <div className="flex">
+              <div className="flex-shrink-0">
+                <Clock className="h-5 w-5 text-yellow-400" />
+              </div>
+              <div className="ml-3">
+                <h3 className="text-sm font-medium text-yellow-800">Draft Found</h3>
+                <p className="text-sm text-yellow-700 mt-1">
+                  We found a saved draft from {formatDraftTimestamp(draftData.timestamp)}. Would you like to continue where you left off?
                 </p>
               </div>
-              <div className="flex gap-3">
-                <Button onClick={handleContinueWithDraft} variant="default" size="sm">
-                  Continue with Draft
-                </Button>
-                <Button onClick={handleDiscardDraft} variant="outline" size="sm">
-                  Start Fresh
-                </Button>
-              </div>
             </div>
-          </div>
-        )}
-
-        {/* Smart Input for initial setup */}
-        {showSmartInput && (
-          <div className="bg-white border-b px-6 py-6">
-            <div className="mb-4">
-              <h2 className="text-lg font-semibold">Quick Start</h2>
-              <p className="text-muted-foreground text-sm">
-                Paste your existing itinerary or trip details to get started quickly
-              </p>
-            </div>
-            <SmartInput onDataParsed={handleDataParsed} />
-            <div className="mt-4 text-center">
-              <Button 
-                variant="outline" 
-                onClick={() => setShowSmartInput(false)}
+            <div className="flex space-x-2">
+              <Button
+                onClick={handleContinueWithDraft}
+                className="bg-yellow-800 hover:bg-yellow-900 text-white"
+                size="sm"
               >
-                Skip and create manually
+                Continue with Draft
+              </Button>
+              <Button
+                onClick={handleDiscardDraft}
+                variant="outline"
+                size="sm"
+              >
+                Start Fresh
               </Button>
             </div>
           </div>
-        )}
+        </div>
+      )}
 
-        {/* Saved Itineraries List */}
-        {showSavedItineraries && (
-          <div className="bg-white border-b px-6 py-6">
-            <SavedItinerariesList
-              onLoadItinerary={handleLoadItinerary}
-              onDeleteItinerary={persistence.deleteItinerary}
-            />
-          </div>
-        )}
-
-        {/* Three Column Layout */}
-        {!showSmartInput && (
-          <div className="grid grid-cols-12 h-full">
-            {/* Column 1: Navigation Sidebar */}
-            <div className="col-span-2 bg-white border-r">
-              <div className="sticky top-0 p-4">
-                <h3 className="font-semibold text-sm mb-3 text-gray-700">Sections</h3>
-                <div className="space-y-2">
-                  {sections.map((section) => {
-                    const Icon = section.icon;
-                    const isActive = activeSection === section.id;
-                    const isCompleted = getSectionStatus(section.id);
-                    
-                    return (
-                                             <button
-                         key={section.id}
-                         onClick={() => setActiveSection(section.id)}
-                         className={`w-full flex items-center gap-2 p-2 rounded-lg border text-left transition-colors ${
-                           isActive
-                             ? "border-primary bg-primary/5 text-primary"
-                             : isCompleted
-                             ? "border-green-200 bg-green-50 text-green-700 hover:bg-green-100"
-                             : "border-muted bg-background hover:bg-muted/50"
-                         }`}
-                       >
-                         <div
-                           className={`flex items-center justify-center w-7 h-7 rounded-full text-xs font-medium ${
-                             isActive
-                               ? "bg-primary text-primary-foreground"
-                               : isCompleted
-                               ? "bg-green-600 text-white"
-                               : "bg-muted-foreground/20"
-                           }`}
-                         >
-                           {isCompleted ? "✓" : <Icon className="w-3 h-3" />}
-                         </div>
-                         <div className="flex-1 min-w-0">
-                           <div className="font-medium text-sm">{section.title}</div>
-                           <div className="text-xs opacity-75 truncate">{section.description}</div>
-                         </div>
-                       </button>
-                    );
-                  })}
-                  
-                                                       {/* Generate PDF Button */}
-                  <div className="pt-4 mt-4 border-t">
-                    <Button 
-                      onClick={generatePDF} 
-                      className="w-full"
-                      disabled={!formData.title || !formData.destination || isGeneratingPdf}
-                    >
-                      {isGeneratingPdf ? (
-                        <>
-                          <div className="w-4 h-4 mr-2 animate-spin rounded-full border-2 border-background border-t-foreground" />
-                          Generating...
-                        </>
-                      ) : (
-                        <>
-                          <Download className="w-4 h-4 mr-2" />
-                          Download PDF
-                        </>
-                      )}
-                    </Button>
-                  </div>
-                 </div>
-               </div>
-             </div>
-
-            {/* Column 2: Form Content */}
-            <div className="col-span-6 bg-white">
-              <div className="p-6">
-                <div className="mb-6">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Badge variant="outline">{currentSection?.step}</Badge>
-                    <h2 className="text-xl font-semibold">{currentSection?.title}</h2>
-                  </div>
-                  <p className="text-muted-foreground text-sm">
-                    {currentSection?.description}
-                  </p>
-                </div>
-                {renderActiveSection()}
-              </div>
-            </div>
-
-            {/* Column 3: Live Preview */}
-            <div className="col-span-4 bg-gray-50">
-              <div className="sticky top-0 p-4">
-                <PdfPreview data={formData} />
-              </div>
+      {/* Three Column Layout */}
+      <div className="flex h-[calc(100vh-120px)]">
+        {/* Left Sidebar - Sections Navigation */}
+        <div className="w-60 bg-white border-r border-gray-200">
+          <div className="p-4">
+            <h3 className="font-semibold text-sm mb-3 text-gray-700">Sections</h3>
+            <div className="space-y-1">
+              {sections.map((section) => {
+                const Icon = section.icon;
+                const isActive = activeSection === section.id;
+                const isCompleted = getSectionStatus(section.id);
+                
+                return (
+                  <button
+                    key={section.id}
+                    onClick={() => setActiveSection(section.id)}
+                    className={`w-full flex items-center px-3 py-2 text-sm rounded-md transition-colors ${
+                      isActive
+                        ? 'bg-gray-100 text-gray-900 font-medium'
+                        : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                    }`}
+                  >
+                    <Icon className="h-4 w-4 mr-3" />
+                    <span className="flex-1 text-left">{section.title}</span>
+                    {isCompleted && (
+                      <div className="w-2 h-2 bg-green-500 rounded-full ml-2" />
+                    )}
+                  </button>
+                );
+              })}
             </div>
           </div>
-        )}
+        </div>
+
+        {/* Center - Form Components */}
+        <div className="flex-1 overflow-y-auto">
+          <div className="p-6">
+            {renderActiveSection()}
+          </div>
+        </div>
+
+        {/* Right - PDF Preview */}
+        <div className="w-[460px] bg-gray-50 border-l border-gray-200">
+          <div className="p-4">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-semibold text-gray-900">PDF Preview</h3>
+              <div className="text-xs text-gray-500">TRAVEL ITINERARY</div>
+            </div>
+            <div className="bg-white rounded-lg border shadow-sm h-[600px] overflow-y-auto">
+              <PdfPreview data={formData} />
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );

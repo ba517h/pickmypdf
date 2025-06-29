@@ -16,7 +16,7 @@ export default function RootLayout({
     <html lang="en">
       <body className="font-manrope">
         <MainNav />
-        <main className="flex-1 p-10">{children}</main>
+        <main className="flex-1">{children}</main>
         <Toaster />
       </body>
     </html>

@@ -62,7 +62,7 @@ export async function updateSession(request: NextRequest) {
   }
 
   // Redirect unauthenticated users trying to access protected routes to sign-in page with redirectTo
-  const protectedRoutes = ["/itinerary", "/admin", "/protected", "/server", "/client"];
+  const protectedRoutes = ["/itinerary", "/admin", "/protected", "/server", "/client", "/dashboard"];
   if (!user && protectedRoutes.some(route => request.nextUrl.pathname.startsWith(route))) {
     const url = request.nextUrl.clone();
     const redirectTo = `${request.nextUrl.pathname}${request.nextUrl.search}`;

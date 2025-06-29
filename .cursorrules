@@ -3,6 +3,17 @@
 ## Project Overview
 This is a Next.js 14 application for AI-powered travel itinerary creation and PDF generation. The app uses TypeScript, Tailwind CSS, Supabase for auth/storage, and integrates with OpenAI for content extraction. **The project has gone through 7+ major development phases** from basic authentication to a sophisticated travel platform with TRUE 1:1 PDF generation.
 
+## CRITICAL COMPONENT PROTECTION RULES
+
+### 🚨 PDF PREVIEW COMPONENT - DO NOT MODIFY
+**NEVER modify `components/itinerary/pdf-preview.tsx` unless the user EXPLICITLY mentions changing the PDF preview component.**
+
+- The PDF preview component is set to a fixed width of 420px and has been carefully designed
+- It has gone through multiple iterations and is now stable 
+- Any changes to this component can break the TRUE 1:1 PDF generation feature
+- Only modify if user specifically requests changes to "PDF preview" or "preview component"
+- This rule is CRITICAL and must be followed at all times
+
 ## Tech Stack & Key Dependencies
 - **Framework**: Next.js 14 with App Router
 - **Language**: TypeScript (100% strict mode coverage)

@@ -6,22 +6,19 @@ import { useToast } from '@/components/ui/use-toast';
 interface UseItineraryPersistenceProps {
   formData: ItineraryFormData;
   currentItineraryId?: string | null;
-  autoSaveDelay?: number; // ms delay for debounced auto-save
 }
 
 export function useItineraryPersistence({
   formData,
-  currentItineraryId,
-  autoSaveDelay = 60000
+  currentItineraryId
 }: UseItineraryPersistenceProps) {
   const [saveStatus, setSaveStatus] = useState<SaveStatus>('idle');
   const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null);
   const { toast } = useToast();
   
-  // Use refs to avoid stale closures in debounced functions
+  // Use refs to avoid stale closures
   const formDataRef = useRef(formData);
   const currentItineraryIdRef = useRef(currentItineraryId);
-  const autoSaveTimeoutRef = useRef<NodeJS.Timeout>();
 
   // Update refs when props change
   useEffect(() => {
@@ -218,6 +215,16 @@ export function useItineraryPersistence({
     const currentId = currentItineraryIdRef.current;
     const currentFormData = formDataRef.current;
     
+    // Validate that we have data to save
+    if (!currentFormData.title && !title) {
+      toast({
+        title: "Save Failed",
+        description: "Please provide a title for your itinerary before saving.",
+        variant: "destructive",
+      });
+      return null;
+    }
+    
     if (currentId) {
       // Update existing itinerary
       const updates: { title?: string; form_data: ItineraryFormData } = {
@@ -234,44 +241,9 @@ export function useItineraryPersistence({
       const itineraryTitle = title || currentFormData.title || 'Untitled Itinerary';
       return await createItinerary(itineraryTitle);
     }
-  }, [createItinerary, updateItinerary]);
+  }, [createItinerary, updateItinerary, toast]);
 
-  // Auto-save with debouncing
-  const triggerAutoSave = useCallback(() => {
-    // Clear existing timeout
-    if (autoSaveTimeoutRef.current) {
-      clearTimeout(autoSaveTimeoutRef.current);
-    }
 
-    // Only auto-save if we have an existing itinerary ID
-    if (!currentItineraryIdRef.current) {
-      return;
-    }
-
-    // Set new timeout
-    autoSaveTimeoutRef.current = setTimeout(async () => {
-      const currentId = currentItineraryIdRef.current;
-      const currentFormData = formDataRef.current;
-      
-      if (currentId && currentFormData) {
-        await updateItinerary(currentId, { form_data: currentFormData });
-      }
-    }, autoSaveDelay);
-  }, [updateItinerary, autoSaveDelay]);
-
-  // Trigger auto-save when form data changes
-  useEffect(() => {
-    if (currentItineraryId && saveStatus !== 'saving') {
-      triggerAutoSave();
-    }
-
-    // Cleanup timeout on unmount
-    return () => {
-      if (autoSaveTimeoutRef.current) {
-        clearTimeout(autoSaveTimeoutRef.current);
-      }
-    };
-  }, [formData, currentItineraryId, saveStatus, triggerAutoSave]);
 
   return {
     saveStatus,
