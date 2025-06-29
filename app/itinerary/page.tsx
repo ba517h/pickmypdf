@@ -108,7 +108,6 @@ export default function ItineraryCreatorPage() {
   const persistence = useItineraryPersistence({
     formData,
     currentItineraryId,
-    autoSaveDelay: 3000, // 3 seconds
   });
 
   // Check for saved draft on component mount or load itinerary from draftId
