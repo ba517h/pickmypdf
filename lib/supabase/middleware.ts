@@ -9,6 +9,9 @@ export async function updateSession(request: NextRequest) {
     request,
   });
 
+  // Add pathname header for conditional navigation
+  supabaseResponse.headers.set("x-pathname", request.nextUrl.pathname);
+
   // Allow public access to /, /auth/signin, /auth/callback, /api/*, and static files
   const publicPaths = ["/", "/auth/signin", "/auth/callback"];
   const isApi = request.nextUrl.pathname.startsWith("/api/");
@@ -58,7 +61,9 @@ export async function updateSession(request: NextRequest) {
   ) {
     const url = request.nextUrl.clone();
     url.pathname = "/";
-    return NextResponse.redirect(url);
+    const redirectResponse = NextResponse.redirect(url);
+    redirectResponse.headers.set("x-pathname", request.nextUrl.pathname);
+    return redirectResponse;
   }
 
   // Redirect unauthenticated users trying to access protected routes to sign-in page with redirectTo
@@ -68,7 +73,9 @@ export async function updateSession(request: NextRequest) {
     const redirectTo = `${request.nextUrl.pathname}${request.nextUrl.search}`;
     url.pathname = "/auth/signin";
     url.searchParams.set("redirectTo", redirectTo);
-    return NextResponse.redirect(url);
+    const redirectResponse = NextResponse.redirect(url);
+    redirectResponse.headers.set("x-pathname", request.nextUrl.pathname);
+    return redirectResponse;
   }
 
   // Redirect unauthenticated users to sign-in page (for other protected routes)
@@ -76,14 +83,18 @@ export async function updateSession(request: NextRequest) {
     const url = request.nextUrl.clone();
     url.pathname = "/auth/signin";
     url.searchParams.set("redirectedFrom", request.nextUrl.pathname);
-    return NextResponse.redirect(url);
+    const redirectResponse = NextResponse.redirect(url);
+    redirectResponse.headers.set("x-pathname", request.nextUrl.pathname);
+    return redirectResponse;
   }
 
   // Redirect authenticated users attempting to access the sign-in page to the app
   if (user && request.nextUrl.pathname === "/auth/signin") {
     const url = request.nextUrl.clone();
     url.pathname = "/itinerary";
-    return NextResponse.redirect(url);
+    const redirectResponse = NextResponse.redirect(url);
+    redirectResponse.headers.set("x-pathname", request.nextUrl.pathname);
+    return redirectResponse;
   }
 
   return supabaseResponse;
