@@ -1,75 +1,53 @@
 import { NextRequest, NextResponse } from 'next/server';
-import puppeteer from 'puppeteer';
 import React from 'react';
 import { ItineraryFormData } from '@/lib/types';
 import { PdfMobileTemplate } from '@/components/itinerary/pdf-mobile-template';
 import { getImageUrl } from '@/lib/bing-image-api';
 
-// Function to launch browser with multiple fallback strategies
-async function launchBrowserWithFallbacks() {
-  const commonArgs = [
-    '--no-sandbox',
-    '--disable-setuid-sandbox',
-    '--disable-dev-shm-usage',
-    '--disable-accelerated-2d-canvas',
-    '--no-first-run',
-    '--no-zygote',
-    '--single-process',
-    '--disable-gpu',
-    '--disable-background-timer-throttling',
-    '--disable-backgrounding-occluded-windows',
-    '--disable-renderer-backgrounding',
-    '--disable-features=TranslateUI',
-    '--disable-ipc-flooding-protection',
-    '--disable-background-networking'
-  ];
-
-  // Strategy 1: Try with automatic Chrome detection (works on most platforms)
-  try {
-    return await puppeteer.launch({
+// Vercel-compatible Puppeteer setup
+async function launchBrowser() {
+  if (process.env.NODE_ENV === 'development') {
+    // Use regular Puppeteer for development
+    const puppeteer = await import('puppeteer');
+    return await puppeteer.default.launch({
       headless: true,
-      args: commonArgs,
-      timeout: 30000,
+      args: [
+        '--no-sandbox',
+        '--disable-setuid-sandbox',
+        '--disable-dev-shm-usage',
+        '--disable-gpu'
+      ]
     });
-  } catch (error) {
-    console.log('Failed to launch with automatic detection, trying fallbacks...', error);
-  }
-
-  // Strategy 2: Try common Vercel Chrome paths
-  const vercePaths = [
-    '/usr/bin/google-chrome-stable',
-    '/usr/bin/google-chrome',
-    '/usr/bin/chromium-browser',
-    '/usr/bin/chromium'
-  ];
-
-  for (const path of vercePaths) {
-    try {
-      return await puppeteer.launch({
-        headless: true,
-        executablePath: path,
-        args: commonArgs,
-        timeout: 30000,
-      });
-    } catch (error) {
-      console.log(`Failed to launch with path ${path}:`, error);
-    }
-  }
-
-  // Strategy 3: Try with Puppeteer bundled Chromium (if available)
-  try {
-    return await puppeteer.launch({
+  } else {
+    // Use puppeteer-core with @sparticuz/chromium for production
+    const puppeteerCore = await import('puppeteer-core');
+    const chromium = await import('@sparticuz/chromium');
+    
+    return await puppeteerCore.default.launch({
+      args: [
+        ...chromium.default.args,
+        '--hide-scrollbars',
+        '--disable-web-security',
+        '--no-sandbox',
+        '--disable-setuid-sandbox',
+        '--disable-dev-shm-usage',
+        '--disable-gpu',
+        '--single-process',
+        '--no-zygote',
+        '--disable-background-timer-throttling',
+        '--disable-backgrounding-occluded-windows',
+        '--disable-renderer-backgrounding'
+      ],
+      defaultViewport: { width: 1280, height: 720 },
+      executablePath: await chromium.default.executablePath(),
       headless: true,
-      args: commonArgs,
-      timeout: 30000,
-      ignoreDefaultArgs: ['--disable-extensions'],
     });
-  } catch (error) {
-    console.log('Failed to launch with bundled Chromium:', error);
   }
-
-  throw new Error('Unable to launch browser with any strategy');
 }
+
+// Export function configuration for Vercel
+export const maxDuration = 60;
+export const dynamic = 'force-dynamic';
 
 export async function POST(request: NextRequest) {
   let browser;
@@ -92,8 +70,8 @@ export async function POST(request: NextRequest) {
     // Generate complete HTML document
     const htmlContent = generateHtmlDocument(componentHtml, formData);
     
-    // Launch browser with fallback strategies
-    browser = await launchBrowserWithFallbacks();
+    // Launch browser with Vercel-compatible setup
+    browser = await launchBrowser();
     
     const page = await browser.newPage();
     
@@ -112,12 +90,14 @@ export async function POST(request: NextRequest) {
     
     // Get actual content height for truly continuous PDF
     const contentHeight = await page.evaluate(() => {
+      const body = document.body;
+      const html = document.documentElement;
       return Math.max(
-        document.body.scrollHeight,
-        document.body.offsetHeight,
-        document.documentElement.clientHeight,
-        document.documentElement.scrollHeight,
-        document.documentElement.offsetHeight
+        body.scrollHeight,
+        body.offsetHeight,
+        html.clientHeight,
+        html.scrollHeight,
+        html.offsetHeight
       );
     });
 
