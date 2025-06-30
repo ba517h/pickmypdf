@@ -26,6 +26,7 @@ import { SavedItinerariesList } from "@/components/itinerary/saved-itineraries-l
 import { ItineraryFormData } from "@/lib/types";
 import { useItineraryPersistence } from "@/hooks/use-itinerary-persistence";
 import { useSmartInputModal } from "@/hooks/use-smart-input-modal";
+import { usePreviewImages, PreviewImages } from "@/hooks/use-preview-images";
 import { ItineraryResponse } from "@/lib/schemas";
 
 const sections = [
@@ -99,6 +100,13 @@ export default function ItineraryCreatorPage() {
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
   const [currentItineraryId, setCurrentItineraryId] = useState<string | null>(null);
   const [currentItineraryTitle, setCurrentItineraryTitle] = useState<string>("");
+  const [previewImages, setPreviewImages] = useState<PreviewImages>({
+    main: "",
+    hotels: [],
+    experiences: [],
+    days: [],
+    cities: []
+  });
   const [formData, setFormData] = useState<ItineraryFormData>({
     title: "",
     destination: "",
@@ -312,7 +320,10 @@ export default function ItineraryCreatorPage() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({
+          formData,
+          previewImages
+        }),
       });
 
       if (!response.ok) {
@@ -554,7 +565,10 @@ export default function ItineraryCreatorPage() {
               <div className="text-xs text-gray-500">TRAVEL ITINERARY</div>
             </div>
             <div className="bg-white rounded-lg border border-gray-200 h-[600px] overflow-y-auto scroll-smooth">
-              <PdfPreview data={formData} />
+                              <PdfPreview 
+                  data={formData} 
+                  onImagesLoaded={setPreviewImages}
+                />
             </div>
           </div>
         </div>

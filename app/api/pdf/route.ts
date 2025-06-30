@@ -3,6 +3,7 @@ import React from 'react';
 import { ItineraryFormData } from '@/lib/types';
 import { PdfMobileTemplate } from '@/components/itinerary/pdf-mobile-template';
 import { getImageUrl } from '@/lib/bing-image-api';
+import { PreviewImages } from '@/hooks/use-preview-images';
 
 // Vercel-compatible Puppeteer setup with @sparticuz/chromium-min
 async function launchBrowser() {
@@ -48,7 +49,10 @@ export async function POST(request: NextRequest) {
   let browser;
   
   try {
-    const formData: ItineraryFormData = await request.json();
+    const { formData, previewImages }: { 
+      formData: ItineraryFormData; 
+      previewImages?: PreviewImages;
+    } = await request.json();
     
     console.log('Starting PDF generation for:', formData.title);
     console.log('FormData structure:', JSON.stringify({
@@ -82,10 +86,10 @@ export async function POST(request: NextRequest) {
     
     console.log('Safe form data created');
     
-    // Load images using DIRECT function calls (no self-referential API calls)
-    console.log('Loading preview images...');
-    const previewImages = await loadPreviewImagesDirect(safeFormData);
-    console.log('Preview images loaded');
+    // Use provided preview images or generate fast placeholders if none provided
+    console.log('Using preview images...');
+    const finalPreviewImages = previewImages || await loadPreviewImagesDirect(safeFormData);
+    console.log('Preview images ready');
     
     // Render the actual React component to HTML using dynamic import
     console.log('Importing React DOM server...');
@@ -94,7 +98,7 @@ export async function POST(request: NextRequest) {
     const componentHtml = renderToString(
       React.createElement(PdfMobileTemplate, {
         data: safeFormData,
-        previewImages: previewImages
+        previewImages: finalPreviewImages
       })
     );
     console.log('React component rendered, HTML length:', componentHtml.length);
