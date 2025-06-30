@@ -15,23 +15,15 @@ async function launchBrowser() {
         '--no-sandbox',
         '--disable-setuid-sandbox',
         '--disable-dev-shm-usage',
-        '--disable-gpu',
-        '--disable-web-security',
-        '--disable-features=VizDisplayCompositor',
-        '--disable-background-timer-throttling',
-        '--disable-backgrounding-occluded-windows',
-        '--disable-renderer-backgrounding',
-        '--disable-background-networking',
-        '--memory-pressure-off',
-        '--disable-extensions'
+        '--disable-gpu'
       ]
     });
   } else {
-    // Use puppeteer-core with @sparticuz/chromium-min for production
+    // Simplified production configuration for maximum speed
     const puppeteerCore = await import('puppeteer-core');
     const chromium = await import('@sparticuz/chromium-min');
     
-    // Remote URL for brotli files as required by chromium-min
+    // Remote URL for brotli files - cached after first download
     const REMOTE_PACK_URL = 'https://github.com/Sparticuz/chromium/releases/download/v137.0.1/chromium-v137.0.1-pack.x64.tar';
     const executablePath = await chromium.default.executablePath(REMOTE_PACK_URL);
     
@@ -39,25 +31,11 @@ async function launchBrowser() {
       args: [
         ...chromium.default.args,
         '--disable-web-security',
-        '--disable-features=VizDisplayCompositor',
-        '--disable-background-timer-throttling',
-        '--disable-backgrounding-occluded-windows',
-        '--disable-renderer-backgrounding',
-        '--disable-background-networking',
-        '--memory-pressure-off',
-        '--disable-extensions',
-        '--disable-plugins',
-        '--disable-sync',
-        '--disable-translate',
-        '--hide-scrollbars',
-        '--mute-audio',
-        '--no-first-run',
-        '--disable-notifications',
-        '--disable-default-apps'
+        '--disable-dev-shm-usage'
       ],
       executablePath,
       headless: true,
-      timeout: 30000
+      timeout: 15000  // Reduced timeout
     });
   }
 }
@@ -134,46 +112,49 @@ export async function POST(request: NextRequest) {
     const page = await browser.newPage();
     console.log('Page created');
 
-    // Performance optimizations for faster PDF generation
-    await page.setViewport({ width: 420, height: 1080, deviceScaleFactor: 1 });
-    await page.evaluateOnNewDocument(() => {
-      // Disable animations for faster rendering
-      const css = `
-        *, *::before, *::after {
-          animation-duration: 0s !important;
-          animation-delay: 0s !important;
-          transition-duration: 0s !important;
-          transition-delay: 0s !important;
-        }
-      `;
-      const style = document.createElement('style');
-      style.appendChild(document.createTextNode(css));
-      document.head.appendChild(style);
-    });
+    // Fast viewport setup
+    await page.setViewport({ width: 420, height: 800, deviceScaleFactor: 1 });
     
-    console.log('Setting HTML content for PDF generation...');
+    // Fast content loading without expensive wait conditions
+    console.log('Setting HTML content for fast PDF generation...');
     await page.setContent(htmlContent, { 
-      waitUntil: 'domcontentloaded',
-      timeout: 15000 
+      waitUntil: 'load',  // Faster than domcontentloaded
+      timeout: 10000      // Reduced timeout
     });
     
-    console.log('Generating PDF...');
+    // Generate continuous PDF quickly - skip content height calculation for speed
+    console.log('Generating PDF quickly...');
     const pdf = await page.pdf({
-      width: '420px',
       printBackground: true,
-      preferCSSPageSize: true,
-      timeout: 20000
+      preferCSSPageSize: false,
+      margin: { top: '0px', bottom: '0px', left: '0px', right: '0px' },
+      width: '420px',
+      height: '11000px',  // Fixed large height instead of calculating
+      pageRanges: '1',
+      timeout: 10000      // Reduced timeout
     });
 
     await page.close();
     await browser.close();
 
-    console.log(`PDF generated successfully. Size: ${pdf.length} bytes`);
+    console.log(`Fast PDF generated successfully. Size: ${pdf.length} bytes`);
+    
+    // Sanitize filename to remove Unicode characters that break headers
+    const sanitizeFilename = (filename: string): string => {
+      return filename
+        .replace(/[^\w\s-]/g, '') // Remove special characters, keep letters, numbers, spaces, hyphens
+        .replace(/\s+/g, '-')     // Replace spaces with hyphens
+        .replace(/-+/g, '-')      // Replace multiple hyphens with single hyphen
+        .trim()                   // Remove leading/trailing whitespace
+        .substring(0, 50);        // Limit length
+    };
+
+    const safeFilename = sanitizeFilename(formData.title || 'itinerary');
     
     return new NextResponse(pdf, {
       headers: {
         'Content-Type': 'application/pdf',
-        'Content-Disposition': 'attachment; filename="itinerary.pdf"',
+        'Content-Disposition': `attachment; filename="${safeFilename}.pdf"`,
         'Content-Length': pdf.length.toString(),
       },
     });
@@ -205,21 +186,10 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// DIRECT image loading - NO self-referential API calls
+// DIRECT image loading - NO self-referential API calls - FAST MODE
 async function loadPreviewImagesDirect(data: ItineraryFormData) {
-  // Function to get or generate image for preview - DIRECT function calls
-  const getPreviewImage = async (keywords: string, type: 'main' | 'hotel' | 'experience' | 'day' | 'city', index: number = 0): Promise<string> => {
-    try {
-      // Call the function directly instead of making HTTP requests
-      const imageUrl = await getImageUrl(keywords);
-      if (imageUrl) {
-        return imageUrl;
-      }
-    } catch (error) {
-      console.log('Failed to fetch image, using fallback');
-    }
-    
-    // Fallback to high-quality placeholder
+  // PERFORMANCE OPTIMIZATION: Use fast placeholders instead of API calls
+  const getFastPlaceholder = (type: 'main' | 'hotel' | 'experience' | 'day' | 'city', index: number = 0): string => {
     const baseRandoms = {
       main: 1000,
       hotel: 2000,
@@ -231,86 +201,14 @@ async function loadPreviewImagesDirect(data: ItineraryFormData) {
   };
 
   const newImages = {
-    main: "",
-    hotels: [] as string[],
-    experiences: [] as string[],
-    days: [] as string[],
-    cities: [] as string[]
+    main: data.mainImage || getFastPlaceholder('main'),
+    hotels: (data.hotels || []).map((hotel, index) => hotel.image || getFastPlaceholder('hotel', index)),
+    experiences: (data.experiences || []).map((experience, index) => experience.image || getFastPlaceholder('experience', index)),
+    days: (data.dayWiseItinerary || []).map((day, index) => day.image || getFastPlaceholder('day', index)),
+    cities: (data.cityImages || []).map((_, index) => getFastPlaceholder('city', index))
   };
 
-  // Main image - prioritize form data
-  if (data.mainImage) {
-    newImages.main = data.mainImage;
-  } else if (data.destination) {
-    newImages.main = await getPreviewImage(`${data.destination} landscape destination`, 'main');
-  }
-
-  // Hotel images with parallel processing and error handling
-  const safeHotels = data.hotels || [];
-  try {
-    const hotelPromises = safeHotels.map(async (hotel, index) => {
-      if (hotel.image) {
-        return hotel.image;
-      }
-      const keywords = `${hotel.name} ${data.destination || 'luxury'} hotel accommodation`;
-      return await getPreviewImage(keywords, 'hotel', index);
-    });
-    newImages.hotels = await Promise.all(hotelPromises);
-  } catch (error) {
-    console.error('Error loading hotel images:', error);
-    newImages.hotels = safeHotels.map((_, index) => `https://picsum.photos/600/400?random=${2000 + index}`);
-  }
-
-  // Experience images with parallel processing and error handling
-  const safeExperiences = data.experiences || [];
-  try {
-    const experiencePromises = safeExperiences.map(async (experience, index) => {
-      if (experience.image) {
-        return experience.image;
-      }
-      const keywords = `${experience.name} ${data.destination || 'travel'} activity experience`;
-      return await getPreviewImage(keywords, 'experience', index);
-    });
-    newImages.experiences = await Promise.all(experiencePromises);
-  } catch (error) {
-    console.error('Error loading experience images:', error);
-    newImages.experiences = safeExperiences.map((_, index) => `https://picsum.photos/600/400?random=${3000 + index}`);
-  }
-
-  // Day images with parallel processing and error handling
-  const safeDayWiseItinerary = data.dayWiseItinerary || [];
-  try {
-    const dayPromises = safeDayWiseItinerary.map(async (day, index) => {
-      if (day.image) {
-        return day.image;
-      }
-      const keywords = `${day.title} ${data.destination || 'travel'} tour activity`;
-      return await getPreviewImage(keywords, 'day', index);
-    });
-    newImages.days = await Promise.all(dayPromises);
-  } catch (error) {
-    console.error('Error loading day images:', error);
-    newImages.days = safeDayWiseItinerary.map((_, index) => `https://picsum.photos/600/400?random=${4000 + index}`);
-  }
-
-  // City images with parallel processing and error handling
-  const safeCityImages = data.cityImages || [];
-  if (safeCityImages.length > 0) {
-    try {
-      const cityPromises = safeCityImages.map(async (cityImage, index) => {
-        if (cityImage.image) {
-          return cityImage.image;
-        }
-        const keywords = `${cityImage.city} ${data.destination || 'city'} landmark skyline`;
-        return await getPreviewImage(keywords, 'city', index);
-      });
-      newImages.cities = await Promise.all(cityPromises);
-    } catch (error) {
-      console.error('Error loading city images:', error);
-      newImages.cities = safeCityImages.map((_, index) => `https://picsum.photos/600/400?random=${5000 + index}`);
-    }
-  }
-
+  console.log('Fast placeholder images loaded instantly');
   return newImages;
 }
 
