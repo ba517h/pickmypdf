@@ -126,16 +126,37 @@ export async function POST(request: NextRequest) {
       timeout: 10000      // Reduced timeout
     });
     
-    // Generate continuous PDF quickly - skip content height calculation for speed
-    console.log('Generating PDF quickly...');
+    // Calculate estimated content height based on form data (faster than DOM evaluation)
+    console.log('Calculating optimal PDF height...');
+    const estimatedHeight = (() => {
+      let height = 400; // Base height for header/cover
+      
+      // Add height estimates based on content
+      if (safeFormData.hotels.length > 0) height += safeFormData.hotels.length * 180;
+      if (safeFormData.experiences.length > 0) height += safeFormData.experiences.length * 180;
+      if (safeFormData.dayWiseItinerary.length > 0) height += safeFormData.dayWiseItinerary.length * 250;
+      if (safeFormData.practicalInfo.tips.length > 0) height += safeFormData.practicalInfo.tips.length * 40;
+      if (safeFormData.cityImages && safeFormData.cityImages.length > 0) height += safeFormData.cityImages.length * 150;
+      
+      // Add base sections (overview, practical info, etc.)
+      height += 600;
+      
+      // Ensure reasonable bounds
+      return Math.min(Math.max(height, 800), 6000); // Between 800px and 6000px
+    })();
+    
+    console.log(`Estimated content height: ${estimatedHeight}px`);
+    
+    // Generate PDF with optimal height
+    console.log('Generating PDF with optimal dimensions...');
     const pdf = await page.pdf({
       printBackground: true,
       preferCSSPageSize: false,
       margin: { top: '0px', bottom: '0px', left: '0px', right: '0px' },
       width: '420px',
-      height: '11000px',  // Fixed large height instead of calculating
+      height: `${estimatedHeight}px`,  // Smart estimated height based on content
       pageRanges: '1',
-      timeout: 10000      // Reduced timeout
+      timeout: 10000
     });
 
     await page.close();
