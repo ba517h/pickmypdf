@@ -30,6 +30,9 @@ import {
 } from '@/components/ui/alert-dialog';
 import { ItinerariesListResponse } from '@/lib/schemas';
 import { useToast } from '@/components/ui/use-toast';
+import { SmartInputModal } from '@/components/smart-input-modal';
+import { useSmartInputModal } from '@/hooks/use-smart-input-modal';
+import { ItineraryFormData } from '@/lib/types';
 
 export default function DashboardPage() {
   const [itineraries, setItineraries] = useState<ItinerariesListResponse>([]);
@@ -39,6 +42,7 @@ export default function DashboardPage() {
   const [exportingId, setExportingId] = useState<string | null>(null);
   const { toast } = useToast();
   const router = useRouter();
+  const smartInputModal = useSmartInputModal();
 
   const loadItineraries = async () => {
     try {
@@ -72,7 +76,45 @@ export default function DashboardPage() {
   }, []); // Empty dependency array to prevent infinite loop
 
   const handleCreateNew = () => {
-    router.push('/itinerary');
+    smartInputModal.openModal();
+  };
+
+  const handleDataParsed = async (data: ItineraryFormData) => {
+    try {
+      // Save the extracted data to Supabase
+      const response = await fetch('/api/itineraries', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          title: data.title || 'Untitled Itinerary',
+          form_data: data,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to save itinerary');
+      }
+
+      const savedItinerary = await response.json();
+      
+      // Redirect to the itinerary editor with the new draft ID
+      router.push(`/itinerary?draftId=${savedItinerary.id}`);
+      
+      toast({
+        title: "Itinerary Created",
+        description: "AI-generated itinerary saved. You can now edit and refine it.",
+      });
+      
+    } catch (error) {
+      console.error('Error saving itinerary:', error);
+      toast({
+        title: "Save Failed",
+        description: "Failed to save the extracted itinerary. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleEdit = (id: string) => {
@@ -412,6 +454,14 @@ export default function DashboardPage() {
           ))}
         </div>
       )}
+
+      {/* SmartInput Modal */}
+      <SmartInputModal
+        open={smartInputModal.isOpen}
+        onOpenChange={(open) => open ? smartInputModal.openModal() : smartInputModal.closeModal()}
+        onDataParsed={handleDataParsed}
+        hasExistingData={false}
+      />
     </div>
   );
 } 

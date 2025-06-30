@@ -6,7 +6,7 @@ import { useSearchParams, useRouter } from "next/navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { FileText, Clock, MapPin, Star, Calendar, Camera, Settings, Download, Archive, Plus, X } from "lucide-react";
+import { FileText, Clock, MapPin, Star, Calendar, Camera, Settings, Download, Archive, Plus, X, Upload } from "lucide-react";
 import { loadDraft, clearDraft, formatDraftTimestamp } from "@/lib/storage";
 import { useToast } from "@/components/ui/use-toast";
 
@@ -16,12 +16,13 @@ import { DayWiseStep } from "@/components/itinerary/day-wise-step";
 import { GalleryStep } from "@/components/itinerary/gallery-step";
 import { OptionalBlocksStep } from "@/components/itinerary/optional-blocks-step";
 import { PdfPreview } from "@/components/itinerary/pdf-preview";
-import { SmartInput } from "@/components/smart-input";
+import { SmartInputModal } from "@/components/smart-input-modal";
 import { SaveStatusIndicator } from "@/components/ui/save-status-indicator";
 import { SavedItinerariesList } from "@/components/itinerary/saved-itineraries-list";
 
 import { ItineraryFormData } from "@/lib/types";
 import { useItineraryPersistence } from "@/hooks/use-itinerary-persistence";
+import { useSmartInputModal } from "@/hooks/use-smart-input-modal";
 import { ItineraryResponse } from "@/lib/schemas";
 
 const sections = [
@@ -68,7 +69,6 @@ export default function ItineraryCreatorPage() {
   const draftId = searchParams.get('draftId');
   
   const [activeSection, setActiveSection] = useState("overview");
-  const [showSmartInput, setShowSmartInput] = useState(true);
   const [showSavedItineraries, setShowSavedItineraries] = useState(false);
   const [showDraftPrompt, setShowDraftPrompt] = useState(false);
   const [draftData, setDraftData] = useState<{ data: ItineraryFormData; timestamp: string } | null>(null);
@@ -110,6 +110,9 @@ export default function ItineraryCreatorPage() {
     currentItineraryId,
   });
 
+  // Initialize SmartInput modal hook
+  const smartInputModal = useSmartInputModal();
+
   // Check for saved draft on component mount or load itinerary from draftId
   useEffect(() => {
     if (draftId) {
@@ -120,7 +123,6 @@ export default function ItineraryCreatorPage() {
           setFormData(itinerary.form_data);
           setCurrentItineraryId(itinerary.id);
           setCurrentItineraryTitle(itinerary.title);
-          setShowSmartInput(false);
           setActiveSection("overview");
 
           toast({
@@ -154,7 +156,6 @@ export default function ItineraryCreatorPage() {
 
   const handleDataParsed = (data: ItineraryFormData) => {
     setFormData(data);
-    setShowSmartInput(false);
     setActiveSection("overview");
   };
 
@@ -162,7 +163,6 @@ export default function ItineraryCreatorPage() {
   const handleContinueWithDraft = () => {
     if (draftData) {
       setFormData(draftData.data);
-      setShowSmartInput(false);
       setActiveSection("overview");
       setShowDraftPrompt(false);
       
@@ -192,7 +192,6 @@ export default function ItineraryCreatorPage() {
       setCurrentItineraryId(itinerary.id);
       setCurrentItineraryTitle(itinerary.title);
       setShowSavedItineraries(false);
-      setShowSmartInput(false);
       setActiveSection("overview");
 
       toast({
@@ -229,7 +228,7 @@ export default function ItineraryCreatorPage() {
     setCurrentItineraryId(null);
     setCurrentItineraryTitle("");
     setShowSavedItineraries(false);
-    setShowSmartInput(true);
+    smartInputModal.openModal();
   };
 
   // Handle manual save
@@ -340,13 +339,8 @@ export default function ItineraryCreatorPage() {
     router.push('/dashboard');
   };
 
-  if (showSmartInput) {
-    return (
-      <div className="min-h-screen bg-gray-50 font-manrope">
-        <SmartInput onDataParsed={handleDataParsed} />
-      </div>
-    );
-  }
+  // Helper function to check if form has existing data
+  const hasExistingData = !!(formData.title || formData.destination || formData.dayWiseItinerary.length > 0);
 
   return (
     <div className="min-h-screen bg-white font-manrope">
@@ -359,7 +353,7 @@ export default function ItineraryCreatorPage() {
               <p className="text-gray-600 mt-1">Build a comprehensive travel itinerary that can be exported as a PDF</p>
             </div>
             
-            <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-3">
               <SaveStatusIndicator 
                 status={persistence.saveStatus}
                 lastSavedAt={persistence.lastSavedAt}
@@ -367,7 +361,18 @@ export default function ItineraryCreatorPage() {
               />
               
               <Button
+                variant="secondary"
+                size="default"
+                onClick={smartInputModal.openModal}
+                className="flex items-center"
+              >
+                <Upload className="h-4 w-4 mr-2" />
+                Try Smart Input
+              </Button>
+              
+              <Button
                 variant="outline"
+                size="default"
                 onClick={handleCreateNew}
                 className="flex items-center"
               >
@@ -376,6 +381,8 @@ export default function ItineraryCreatorPage() {
               </Button>
               
               <Button
+                variant="default"
+                size="default"
                 onClick={generatePDF}
                 disabled={isGeneratingPdf || !formData.title || !formData.destination}
                 className="bg-black hover:bg-gray-800 text-white"
@@ -389,7 +396,7 @@ export default function ItineraryCreatorPage() {
               </Button>
               
               <Button
-                variant="outline"
+                variant="ghost"
                 size="icon"
                 onClick={closePage}
                 className="h-8 w-8"
@@ -490,6 +497,14 @@ export default function ItineraryCreatorPage() {
           </div>
         </div>
       </div>
+
+      {/* SmartInput Modal */}
+      <SmartInputModal
+        open={smartInputModal.isOpen}
+        onOpenChange={(open) => open ? smartInputModal.openModal() : smartInputModal.closeModal()}
+        onDataParsed={handleDataParsed}
+        hasExistingData={hasExistingData}
+      />
     </div>
   );
 } 

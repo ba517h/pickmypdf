@@ -87,12 +87,11 @@ export function SaveStatusIndicator({
       {/* Manual Save Button */}
       {onSave && status !== 'saving' && (
         <Button
-          variant={status === 'idle' ? 'default' : 'ghost'}
-          size="sm"
+          variant="secondary"
+          size="default"
           onClick={onSave}
-          className="h-8 px-3 text-sm font-medium"
         >
-          <Save className="h-4 w-4 mr-1" />
+          <Save className="h-4 w-4 mr-2" />
           Save
         </Button>
       )}
