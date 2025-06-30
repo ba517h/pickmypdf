@@ -55,40 +55,56 @@ export async function POST(request: NextRequest) {
   try {
     const formData: ItineraryFormData = await request.json();
     
+    console.log('Starting PDF generation for:', formData.title);
+    
     // Load images using DIRECT function calls (no self-referential API calls)
+    console.log('Loading preview images...');
     const previewImages = await loadPreviewImagesDirect(formData);
+    console.log('Preview images loaded');
     
     // Render the actual React component to HTML using dynamic import
+    console.log('Importing React DOM server...');
     const { renderToString } = await import('react-dom/server');
+    console.log('Rendering React component...');
     const componentHtml = renderToString(
       React.createElement(PdfMobileTemplate, {
         data: formData,
         previewImages: previewImages
       })
     );
+    console.log('React component rendered, HTML length:', componentHtml.length);
     
     // Generate complete HTML document
+    console.log('Generating HTML document...');
     const htmlContent = generateHtmlDocument(componentHtml, formData);
+    console.log('HTML document generated');
     
     // Launch browser with Vercel-compatible setup
+    console.log('Launching browser...');
     browser = await launchBrowser();
+    console.log('Browser launched successfully');
     
     const page = await browser.newPage();
-    
+    console.log('Page created');
+
     // Set mobile viewport for consistent rendering
     await page.setViewport({
       width: 420,
       height: 800,
       deviceScaleFactor: 2
     });
+    console.log('Viewport set');
     
     // Set content and wait for images to load with timeout
+    console.log('Setting page content...');
     await page.setContent(htmlContent, {
       waitUntil: 'networkidle0',
-      timeout: 30000
+      timeout: 60000
     });
-    
+    console.log('Page content set');
+
     // Get actual content height for truly continuous PDF
+    console.log('Getting content height...');
     const contentHeight: number = await (page as any).evaluate(() => {
       return Math.max(
         document.body.scrollHeight,
@@ -98,8 +114,10 @@ export async function POST(request: NextRequest) {
         document.documentElement.offsetHeight
       );
     });
+    console.log('Content height:', contentHeight);
 
     // Generate truly continuous PDF - single page with exact content height
+    console.log('Generating PDF...');
     const pdfBuffer = await page.pdf({
       printBackground: true,
       preferCSSPageSize: false,  // Don't use CSS page size
@@ -109,9 +127,11 @@ export async function POST(request: NextRequest) {
       height: `${contentHeight}px`,  // Exact height = no page breaks!
       pageRanges: '1',  // Single page only
     });
-    
+    console.log('PDF generated successfully, size:', pdfBuffer.length);
+
     await browser.close();
     browser = null;
+    console.log('Browser closed');
     
     // Sanitize filename to remove Unicode characters that break headers
     const sanitizeFilename = (filename: string): string => {
@@ -132,7 +152,7 @@ export async function POST(request: NextRequest) {
         'Content-Disposition': `attachment; filename="${safeFilename}.pdf"`
       }
     });
-    
+
   } catch (error) {
     console.error('PDF generation error:', error);
     
@@ -145,10 +165,15 @@ export async function POST(request: NextRequest) {
       }
     }
     
+    // Return detailed error information
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    const errorStack = error instanceof Error ? error.stack : 'No stack trace';
+    
     return NextResponse.json(
       { 
         error: 'Failed to generate PDF',
-        details: process.env.NODE_ENV === 'development' ? (error instanceof Error ? error.message : 'Unknown error') : undefined
+        details: errorMessage,
+        stack: process.env.NODE_ENV === 'development' ? errorStack : undefined
       },
       { status: 500 }
     );
