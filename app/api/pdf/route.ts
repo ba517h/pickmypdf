@@ -31,8 +31,9 @@ async function launchBrowser() {
     const puppeteerCore = await import('puppeteer-core');
     const chromium = await import('@sparticuz/chromium-min');
     
-    // Performance optimizations for Vercel - Use default/correct API
-    const executablePath = await chromium.default.executablePath();
+    // Remote URL for brotli files as required by chromium-min
+    const REMOTE_PACK_URL = 'https://github.com/Sparticuz/chromium/releases/download/v137.0.1/chromium-v137.0.1-pack.x64.tar';
+    const executablePath = await chromium.default.executablePath(REMOTE_PACK_URL);
     
     return await puppeteerCore.default.launch({
       args: [
