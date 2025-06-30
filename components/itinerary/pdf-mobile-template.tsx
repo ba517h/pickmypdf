@@ -89,16 +89,31 @@ const CompassIcon = () => (
 );
 
 export function PdfMobileTemplate({ data, previewImages }: PdfMobileTemplateProps) {
+  // Ensure all arrays have default values to prevent undefined map errors
+  const safeData = {
+    ...data,
+    tags: data.tags || [],
+    hotels: data.hotels || [],
+    experiences: data.experiences || [],
+    dayWiseItinerary: data.dayWiseItinerary || [],
+    practicalInfo: {
+      ...data.practicalInfo,
+      tips: data.practicalInfo?.tips || []
+    },
+    destinationGallery: data.destinationGallery || [],
+    cityImages: data.cityImages || []
+  };
+  
   return (
     <div className="h-fit overflow-hidden shadow-lg font-manrope w-full">
       {/* Header Section with Background Image - Cover Page - EXACT COPY */}
       <div className="relative pt-12 pb-12 px-0 text-white overflow-hidden flex flex-col justify-between min-h-[320px]">
         {/* Background Image */}
-        {(data.mainImage || previewImages.main || data.destination) && (
+        {(safeData.mainImage || previewImages.main || safeData.destination) && (
           <>
             <div className="absolute inset-0">
               <img 
-                src={data.mainImage || previewImages.main || `https://picsum.photos/800/400?random=1`} 
+                src={safeData.mainImage || previewImages.main || `https://picsum.photos/800/400?random=1`} 
                 alt="Header background" 
                 className="w-full h-full object-cover"
               />
@@ -110,7 +125,7 @@ export function PdfMobileTemplate({ data, previewImages }: PdfMobileTemplateProp
         )}
         
         {/* Fallback solid background if no image */}
-        {!previewImages.main && !data.destination && (
+        {!previewImages.main && !safeData.destination && (
           <div className="absolute inset-0 bg-gradient-to-br from-blue-600 to-blue-800" />
         )}
         
@@ -123,23 +138,23 @@ export function PdfMobileTemplate({ data, previewImages }: PdfMobileTemplateProp
               <PickMyPDFLogo className="w-36 h-auto drop-shadow-lg" />
             </div>
             
-            {data.title ? (
-              <h1 className="text-3xl font-bold mb-6 leading-tight drop-shadow-md max-w-sm mx-auto">{data.title}</h1>
+            {safeData.title ? (
+              <h1 className="text-3xl font-bold mb-6 leading-tight drop-shadow-md max-w-sm mx-auto">{safeData.title}</h1>
             ) : (
               <h1 className="text-3xl font-bold mb-6 leading-tight opacity-80 drop-shadow-md max-w-sm mx-auto">Your Travel Itinerary</h1>
             )}
             
             <div className="flex flex-wrap justify-center gap-6 text-base mb-6">
-              {data.destination && (
+              {safeData.destination && (
                 <div className="flex items-center gap-1 drop-shadow-sm">
                   <MapPin className="w-5 h-5" />
-                  <span className="font-medium">{data.destination}</span>
+                  <span className="font-medium">{safeData.destination}</span>
                 </div>
               )}
-              {data.duration && (
+              {safeData.duration && (
                 <div className="flex items-center gap-1 drop-shadow-sm">
                   <Calendar className="w-5 h-5" />
-                  <span className="font-medium">{data.duration}</span>
+                  <span className="font-medium">{safeData.duration}</span>
                 </div>
               )}
             </div>
@@ -147,7 +162,7 @@ export function PdfMobileTemplate({ data, previewImages }: PdfMobileTemplateProp
             {/* Cost in INR Block */}
             <div className="mb-6">
               <div className="inline-block bg-white/25 backdrop-blur-sm text-white rounded-full px-4 py-2 font-semibold text-base drop-shadow-md">
-                ₹{data.costInINR || "1,42,000 / person"}
+                ₹{safeData.costInINR || "1,42,000 / person"}
               </div>
             </div>
           </div>
@@ -157,7 +172,7 @@ export function PdfMobileTemplate({ data, previewImages }: PdfMobileTemplateProp
             <div className="flex flex-wrap justify-center gap-2">
               {(() => {
                 const defaultTags = ["Adventure", "Cultural", "Photography", "Foodie"];
-                const displayTags = data.tags.length > 0 ? data.tags : defaultTags;
+                const displayTags = safeData.tags.length > 0 ? safeData.tags : defaultTags;
                 return displayTags.map((tag, index) => (
                   <Badge key={index} variant="secondary" className="text-sm px-3 py-1 bg-white/25 text-white backdrop-blur-sm drop-shadow-sm">
                     {tag}
@@ -178,28 +193,28 @@ export function PdfMobileTemplate({ data, previewImages }: PdfMobileTemplateProp
               Overview
             </h3>
             <div className="space-y-4 pl-4">
-              {data.destination && (
+              {safeData.destination && (
                 <div className="text-gray-700 leading-relaxed">
-                  <strong className="text-gray-900">Destination:</strong> {data.destination}
+                  <strong className="text-gray-900">Destination:</strong> {safeData.destination}
                 </div>
               )}
-              {data.duration && (
+              {safeData.duration && (
                 <div className="text-gray-700 leading-relaxed">
-                  <strong className="text-gray-900">Duration:</strong> {data.duration}
+                  <strong className="text-gray-900">Duration:</strong> {safeData.duration}
                 </div>
               )}
-              {data.routing && (
+              {safeData.routing && (
                 <div className="text-gray-700 leading-relaxed">
-                  <strong className="text-gray-900">Routing:</strong> {data.routing}
+                  <strong className="text-gray-900">Routing:</strong> {safeData.routing}
                 </div>
               )}
-              {data.tripType && (
+              {safeData.tripType && (
                 <div className="text-gray-700 leading-relaxed">
-                  <strong className="text-gray-900">Trip Type:</strong> {data.tripType}
+                  <strong className="text-gray-900">Trip Type:</strong> {safeData.tripType}
                 </div>
               )}
 
-              {!data.destination && !data.duration && !data.routing && !data.tripType && data.tags.length === 0 && (
+              {!safeData.destination && !safeData.duration && !safeData.routing && !safeData.tripType && safeData.tags.length === 0 && (
                 <div className="text-gray-500 italic">
                   Complete the overview section to see your trip details here
                 </div>
@@ -208,14 +223,14 @@ export function PdfMobileTemplate({ data, previewImages }: PdfMobileTemplateProp
           </div>
 
           {/* Hotels Section - EXACT COPY */}
-          {data.hotels.length > 0 && (
+          {safeData.hotels.length > 0 && (
             <div className="space-y-4">
               <h3 className="font-bold text-lg text-gray-800 flex items-center gap-3 pb-2 border-b border-gray-200">
                 <div className="w-1 h-6 bg-green-600 rounded" />
                 Accommodations
               </h3>
               <div className="space-y-4 pl-4">
-                {data.hotels.slice(0, 3).map((hotel, index) => (
+                {safeData.hotels.slice(0, 3).map((hotel, index) => (
                   <div key={index} className="bg-gray-50 rounded-xl p-4 border border-gray-200">
                     <div className="h-24 bg-gray-200 rounded-lg mb-3 overflow-hidden">
                       <img 
@@ -228,9 +243,9 @@ export function PdfMobileTemplate({ data, previewImages }: PdfMobileTemplateProp
                     <div className="text-sm text-gray-600 mt-1">Premium accommodation</div>
                   </div>
                 ))}
-                {data.hotels.length > 3 && (
+                {safeData.hotels.length > 3 && (
                   <div className="text-sm text-gray-500 pl-4 italic">
-                    + {data.hotels.length - 3} more accommodations included
+                    + {safeData.hotels.length - 3} more accommodations included
                   </div>
                 )}
               </div>
@@ -238,14 +253,14 @@ export function PdfMobileTemplate({ data, previewImages }: PdfMobileTemplateProp
           )}
 
           {/* Experiences Section - EXACT COPY */}
-          {data.experiences.length > 0 && (
+          {safeData.experiences.length > 0 && (
             <div className="space-y-4">
               <h3 className="font-bold text-lg text-gray-800 flex items-center gap-3 pb-2 border-b border-gray-200">
                 <div className="w-1 h-6 bg-orange-600 rounded" />
                 Experiences & Activities
               </h3>
               <div className="space-y-4 pl-4">
-                {data.experiences.slice(0, 4).map((experience, index) => (
+                {safeData.experiences.slice(0, 4).map((experience, index) => (
                   <div key={index} className="flex items-start gap-4 bg-white border border-gray-200 rounded-lg p-4">
                     <div className="w-16 h-16 bg-gray-200 rounded-lg overflow-hidden flex-shrink-0">
                       <img 
@@ -266,9 +281,9 @@ export function PdfMobileTemplate({ data, previewImages }: PdfMobileTemplateProp
                     </div>
                   </div>
                 ))}
-                {data.experiences.length > 4 && (
+                {safeData.experiences.length > 4 && (
                   <div className="text-sm text-gray-500 pl-4 italic">
-                    + {data.experiences.length - 4} more experiences included
+                    + {safeData.experiences.length - 4} more experiences included
                   </div>
                 )}
               </div>
@@ -276,21 +291,21 @@ export function PdfMobileTemplate({ data, previewImages }: PdfMobileTemplateProp
           )}
 
           {/* Day-wise Itinerary - EXACT COPY */}
-          {data.dayWiseItinerary.length > 0 && (
+          {safeData.dayWiseItinerary.length > 0 && (
             <div className="space-y-4">
               <h3 className="font-bold text-lg text-gray-800 flex items-center gap-3 pb-2 border-b border-gray-200">
                 <div className="w-1 h-6 bg-purple-600 rounded" />
                 Daily Itinerary
               </h3>
               <div className="space-y-6 pl-4">
-                {data.dayWiseItinerary.slice(0, 4).map((day, index) => (
+                {safeData.dayWiseItinerary.slice(0, 4).map((day, index) => (
                   <div key={index} className="relative">
                     <div className="flex items-start gap-4">
                       <div className="flex flex-col items-center">
                         <div className="w-8 h-8 bg-purple-600 text-white rounded-full flex items-center justify-center text-sm font-bold">
                           {day.day}
                         </div>
-                        {index < data.dayWiseItinerary.slice(0, 4).length - 1 && (
+                        {index < safeData.dayWiseItinerary.slice(0, 4).length - 1 && (
                           <div className="w-0.5 h-20 bg-purple-200 mt-2" />
                         )}
                       </div>
@@ -313,9 +328,9 @@ export function PdfMobileTemplate({ data, previewImages }: PdfMobileTemplateProp
                     </div>
                   </div>
                 ))}
-                {data.dayWiseItinerary.length > 4 && (
+                {safeData.dayWiseItinerary.length > 4 && (
                   <div className="text-sm text-gray-500 pl-12 italic">
-                    + {data.dayWiseItinerary.length - 4} more days in your complete itinerary
+                    + {safeData.dayWiseItinerary.length - 4} more days in your complete itinerary
                   </div>
                 )}
               </div>
@@ -323,15 +338,15 @@ export function PdfMobileTemplate({ data, previewImages }: PdfMobileTemplateProp
           )}
 
           {/* Destination Gallery - EXACT COPY */}
-          {((data.destinationGallery && data.destinationGallery.length > 0) || data.destination) && (
+          {((safeData.destinationGallery && safeData.destinationGallery.length > 0) || safeData.destination) && (
             <div className="space-y-4">
               <h3 className="font-bold text-lg text-gray-800 flex items-center gap-3 pb-2 border-b border-gray-200">
                 <div className="w-1 h-6 bg-teal-600 rounded" />
                 Destination Gallery
               </h3>
               <div className="grid grid-cols-3 gap-3 pl-4">
-                {data.destinationGallery && data.destinationGallery.length > 0 ? (
-                  data.destinationGallery.slice(0, 6).map((galleryItem, index) => (
+                {safeData.destinationGallery && safeData.destinationGallery.length > 0 ? (
+                  safeData.destinationGallery.slice(0, 6).map((galleryItem, index) => (
                     <div key={index} className="relative group">
                       <div className="h-24 bg-gray-200 rounded-lg overflow-hidden">
                         <img 
@@ -353,57 +368,57 @@ export function PdfMobileTemplate({ data, previewImages }: PdfMobileTemplateProp
                       </div>
                     </div>
                   ))
-                ) : data.destination && (
+                ) : safeData.destination && (
                   // Show default destination images when no gallery items are set
                   Array.from({ length: 6 }, (_, index) => (
                     <div key={index} className="relative">
                       <div className="h-24 bg-gray-200 rounded-lg overflow-hidden">
                         <img 
                           src={`https://picsum.photos/300/200?random=${5000 + index}`}
-                          alt={`${data.destination} highlight ${index + 1}`}
+                          alt={`${safeData.destination} highlight ${index + 1}`}
                           className="w-full h-full object-cover"
                         />
                         <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-2">
-                          <div className="text-white text-xs font-medium">{data.destination}</div>
+                          <div className="text-white text-xs font-medium">{safeData.destination}</div>
                         </div>
                       </div>
                     </div>
                   ))
                 )}
               </div>
-              {data.destinationGallery && data.destinationGallery.length > 6 && (
-                <div className="text-sm text-gray-500 pl-4 italic">
-                  + {data.destinationGallery.length - 6} more gallery items
+                              {safeData.destinationGallery && safeData.destinationGallery.length > 6 && (
+                  <div className="text-sm text-gray-500 pl-4 italic">
+                    + {safeData.destinationGallery.length - 6} more gallery items
                 </div>
               )}
             </div>
           )}
 
           {/* Practical Information - EXACT COPY */}
-          {(data.practicalInfo.visa || data.practicalInfo.currency || data.practicalInfo.tips.length > 0) && (
+          {(safeData.practicalInfo.visa || safeData.practicalInfo.currency || safeData.practicalInfo.tips.length > 0) && (
             <div className="space-y-4">
               <h3 className="font-bold text-lg text-gray-800 flex items-center gap-3 pb-2 border-b border-gray-200">
                 <div className="w-1 h-6 bg-blue-600 rounded" />
                 Practical Information
               </h3>
               <div className="space-y-3 text-sm pl-4">
-                {data.practicalInfo.visa && (
+                {safeData.practicalInfo.visa && (
                   <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
                     <strong className="text-blue-900">Visa Requirements:</strong>
-                    <div className="text-blue-800 mt-1">{data.practicalInfo.visa}</div>
+                    <div className="text-blue-800 mt-1">{safeData.practicalInfo.visa}</div>
                   </div>
                 )}
-                {data.practicalInfo.currency && (
+                {safeData.practicalInfo.currency && (
                   <div className="bg-green-50 border border-green-200 rounded-lg p-3">
                     <strong className="text-green-900">Currency:</strong>
-                    <div className="text-green-800 mt-1">{data.practicalInfo.currency}</div>
+                    <div className="text-green-800 mt-1">{safeData.practicalInfo.currency}</div>
                   </div>
                 )}
-                {data.practicalInfo.tips.length > 0 && (
+                {safeData.practicalInfo.tips.length > 0 && (
                   <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
                     <strong className="text-amber-900">Travel Tips:</strong>
                     <ul className="list-disc list-inside text-amber-800 mt-2 space-y-1">
-                      {data.practicalInfo.tips.slice(0, 3).map((tip, index) => (
+                      {safeData.practicalInfo.tips.slice(0, 3).map((tip, index) => (
                         <li key={index} className="text-sm">{tip}</li>
                       ))}
                     </ul>
@@ -414,14 +429,14 @@ export function PdfMobileTemplate({ data, previewImages }: PdfMobileTemplateProp
           )}
 
           {/* Optional Sections - EXACT COPY */}
-          {(data.withKids || data.withFamily || data.offbeatSuggestions) && (
+          {(safeData.withKids || safeData.withFamily || safeData.offbeatSuggestions) && (
             <div className="space-y-4">
               <h3 className="font-bold text-lg text-gray-800 flex items-center gap-3 pb-2 border-b border-gray-200">
                 <div className="w-1 h-6 bg-indigo-600 rounded" />
                 Special Recommendations
               </h3>
               <div className="space-y-3 pl-4">
-                {data.withKids && (
+                {safeData.withKids && (
                   <div className="flex items-start gap-3 bg-blue-50 border border-blue-200 rounded-lg p-4">
                     <UsersIcon />
                     <div>
@@ -430,7 +445,7 @@ export function PdfMobileTemplate({ data, previewImages }: PdfMobileTemplateProp
                     </div>
                   </div>
                 )}
-                {data.withFamily && (
+                {safeData.withFamily && (
                   <div className="flex items-start gap-3 bg-red-50 border border-red-200 rounded-lg p-4">
                     <HeartIcon />
                     <div>
@@ -439,7 +454,7 @@ export function PdfMobileTemplate({ data, previewImages }: PdfMobileTemplateProp
                     </div>
                   </div>
                 )}
-                {data.offbeatSuggestions && (
+                {safeData.offbeatSuggestions && (
                   <div className="flex items-start gap-3 bg-green-50 border border-green-200 rounded-lg p-4">
                     <CompassIcon />
                     <div>
@@ -453,7 +468,7 @@ export function PdfMobileTemplate({ data, previewImages }: PdfMobileTemplateProp
           )}
 
           {/* Empty State - EXACT COPY */}
-          {!data.title && !data.destination && data.hotels.length === 0 && data.experiences.length === 0 && data.dayWiseItinerary.length === 0 && (
+          {!safeData.title && !safeData.destination && safeData.hotels.length === 0 && safeData.experiences.length === 0 && safeData.dayWiseItinerary.length === 0 && (
             <div className="text-center py-12 text-gray-500">
               <CameraIcon />
               <p className="text-lg font-medium mb-2">Your PDF preview will appear here</p>
