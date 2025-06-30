@@ -3,7 +3,7 @@ const nextConfig = {
   // Experimental features for serverless optimization
   experimental: {
     // Enable server components optimization
-    serverComponentsExternalPackages: ['puppeteer', 'puppeteer-core', '@sparticuz/chromium'],
+    serverComponentsExternalPackages: ['puppeteer-core', '@sparticuz/chromium-min'],
   },
   
   // Configure external packages for serverless
@@ -60,15 +60,7 @@ const nextConfig = {
     remotePatterns: [
       {
         protocol: 'https',
-        hostname: 'picsum.photos',
-      },
-      {
-        protocol: 'https',
-        hostname: 'images.unsplash.com',
-      },
-      {
-        protocol: 'https',
-        hostname: 'source.unsplash.com',
+        hostname: '**',
       },
     ],
   },

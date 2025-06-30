@@ -19,7 +19,7 @@
     "@radix-ui/react-separator": "^1.1.7",
     "@radix-ui/react-slot": "^1.2.3",
     "@radix-ui/react-toast": "^1.2.1",
-    "@sparticuz/chromium": "^137.0.1",
+    "@sparticuz/chromium-min": "^137.0.1",
     "@supabase/ssr": "^0.5.2",
     "@supabase/supabase-js": "^2.44.4",
     "@types/puppeteer": "^5.4.7",

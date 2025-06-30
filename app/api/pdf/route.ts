@@ -4,7 +4,7 @@ import { ItineraryFormData } from '@/lib/types';
 import { PdfMobileTemplate } from '@/components/itinerary/pdf-mobile-template';
 import { getImageUrl } from '@/lib/bing-image-api';
 
-// Vercel-compatible Puppeteer setup
+// Vercel-compatible Puppeteer setup with @sparticuz/chromium-min
 async function launchBrowser() {
   if (process.env.NODE_ENV === 'development') {
     // Use regular Puppeteer for development
@@ -19,13 +19,16 @@ async function launchBrowser() {
       ]
     });
   } else {
-    // Use puppeteer-core with @sparticuz/chromium for production
+    // Use puppeteer-core with @sparticuz/chromium-min for production
     const puppeteerCore = await import('puppeteer-core');
-    const chromium = await import('@sparticuz/chromium');
+    const chromium = await import('@sparticuz/chromium-min');
+    
+    // Use remote executable path - this is the key fix for Vercel
+    const REMOTE_EXEC_PATH = 'https://github.com/Sparticuz/chromium/releases/download/v137.0.1/chromium-v137.0.1-pack.tar';
     
     return await puppeteerCore.default.launch({
       args: chromium.default.args,
-      executablePath: await chromium.default.executablePath(),
+      executablePath: await chromium.default.executablePath(REMOTE_EXEC_PATH),
       headless: true,
     });
   }
