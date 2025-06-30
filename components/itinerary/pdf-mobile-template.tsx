@@ -193,30 +193,23 @@ export function PdfMobileTemplate({ data, previewImages }: PdfMobileTemplateProp
               Overview
             </h3>
             <div className="space-y-4 pl-4">
-              {safeData.destination && (
+              {safeData.summary && (
                 <div className="text-gray-700 leading-relaxed">
-                  <strong className="text-gray-900">Destination:</strong> {safeData.destination}
-                </div>
-              )}
-              {safeData.duration && (
-                <div className="text-gray-700 leading-relaxed">
-                  <strong className="text-gray-900">Duration:</strong> {safeData.duration}
+                  {safeData.summary}
                 </div>
               )}
               {safeData.routing && (
-                <div className="text-gray-700 leading-relaxed">
-                  <strong className="text-gray-900">Routing:</strong> {safeData.routing}
-                </div>
-              )}
-              {safeData.tripType && (
-                <div className="text-gray-700 leading-relaxed">
-                  <strong className="text-gray-900">Trip Type:</strong> {safeData.tripType}
+                <div className="text-gray-700 leading-relaxed flex items-start gap-2">
+                  <MapPin className="w-4 h-4 mt-1 text-gray-600 flex-shrink-0" />
+                  <div>
+                    <strong className="text-gray-900">Routing:</strong> {safeData.routing}
+                  </div>
                 </div>
               )}
 
-              {!safeData.destination && !safeData.duration && !safeData.routing && !safeData.tripType && safeData.tags.length === 0 && (
+              {!safeData.summary && !safeData.routing && (
                 <div className="text-gray-500 italic">
-                  Complete the overview section to see your trip details here
+                  Trip overview not added yet.
                 </div>
               )}
             </div>

@@ -124,30 +124,23 @@ export function PdfPreview({ data, onImagesLoaded }: PdfPreviewProps) {
               Overview
             </h3>
             <div className="space-y-4 pl-4">
-              {data.destination && (
+              {data.summary && (
                 <div className="text-gray-700 leading-relaxed">
-                  <strong className="text-gray-900">Destination:</strong> {data.destination}
-                </div>
-              )}
-              {data.duration && (
-                <div className="text-gray-700 leading-relaxed">
-                  <strong className="text-gray-900">Duration:</strong> {data.duration}
+                  {data.summary}
                 </div>
               )}
               {data.routing && (
-                <div className="text-gray-700 leading-relaxed">
-                  <strong className="text-gray-900">Routing:</strong> {data.routing}
-                </div>
-              )}
-              {data.tripType && (
-                <div className="text-gray-700 leading-relaxed">
-                  <strong className="text-gray-900">Trip Type:</strong> {data.tripType}
+                <div className="text-gray-700 leading-relaxed flex items-start gap-2">
+                  <MapPin className="w-4 h-4 mt-1 text-gray-600 flex-shrink-0" />
+                  <div>
+                    <strong className="text-gray-900">Routing:</strong> {data.routing}
+                  </div>
                 </div>
               )}
 
-              {!data.destination && !data.duration && !data.routing && !data.tripType && data.tags.length === 0 && (
+              {!data.summary && !data.routing && (
                 <div className="text-gray-500 italic">
-                  Complete the overview section to see your trip details here
+                  Trip overview not added yet.
                 </div>
               )}
             </div>

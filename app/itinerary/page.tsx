@@ -112,6 +112,7 @@ export default function ItineraryCreatorPage() {
     destination: "",
     duration: "",
     routing: "",
+    summary: "",
     tags: ["Adventure", "Cultural", "Photography", "Foodie"],
     tripType: "",
     costInINR: "1,42,000 / person",
@@ -169,8 +170,10 @@ export default function ItineraryCreatorPage() {
     if (draftId) {
       // Load specific itinerary from URL parameter
       const loadItineraryFromUrl = async () => {
-        const itinerary = await persistence.loadItinerary(draftId);
-        if (itinerary) {
+        const response = await fetch(`/api/itineraries/${draftId}`);
+        
+        if (response.ok) {
+          const itinerary = await response.json();
           setFormData(itinerary.form_data);
           setCurrentItineraryId(itinerary.id);
           setCurrentItineraryTitle(itinerary.title);
@@ -180,6 +183,9 @@ export default function ItineraryCreatorPage() {
             title: "Itinerary Loaded",
             description: `"${itinerary.title}" has been loaded for editing.`,
           });
+
+          // DISABLED: Auto-generate summary for loaded itineraries to prevent infinite loops
+          // Only manual generation allowed for existing itineraries
         } else {
           toast({
             title: "Load Failed",
@@ -198,11 +204,25 @@ export default function ItineraryCreatorPage() {
         setShowDraftPrompt(true);
       }
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [draftId]); // Removed persistence and toast from dependencies to prevent infinite loop
+  }, [draftId, toast]);
+
+  // DISABLED: Auto-generation completely to prevent infinite loops and API costs
+  // Summary generation will be manual only via UI button
+  
+  // const [summaryGenerated, setSummaryGenerated] = useState(false);
+  // useEffect(() => {
+  //   // DISABLED - causes infinite loops and expensive API calls
+  // }, []);
 
   const updateFormData = (stepData: Partial<ItineraryFormData>) => {
     setFormData(prev => ({ ...prev, ...stepData }));
+    
+    // Auto-save when summary is generated (only for existing itineraries)
+    if (stepData.summary && currentItineraryId) {
+      persistence.updateItinerary(currentItineraryId, { 
+        form_data: { ...formData, ...stepData } 
+      });
+    }
   };
 
   const handleDataParsed = (data: ItineraryFormData) => {
@@ -265,6 +285,7 @@ export default function ItineraryCreatorPage() {
       destination: "",
       duration: "",
       routing: "",
+      summary: "",
       tags: ["Adventure", "Cultural", "Photography", "Foodie"],
       tripType: "",
       costInINR: "1,42,000 / person",
@@ -390,7 +411,7 @@ export default function ItineraryCreatorPage() {
       case "cover":
         return formData.title && formData.destination;
       case "overview":
-        return formData.destination && formData.duration && formData.routing;
+        return formData.summary || formData.routing;
       case "accommodations":
         return formData.hotels.length > 0;
       case "experiences":
@@ -535,7 +556,7 @@ export default function ItineraryCreatorPage() {
                     className={`w-full flex items-center px-3 py-2 text-sm rounded-md transition-colors ${
                       isActive
                         ? 'bg-gray-100 text-gray-900 font-medium'
-                        : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                        : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900 font-medium'
                     }`}
                   >
                     <Icon className="h-4 w-4 mr-3" />

@@ -15,6 +15,7 @@ export interface ItineraryFormData {
   destination: string;
   duration: string;
   routing: string;
+  summary?: string;
   tags: string[];
   tripType: string;
   costInINR?: string;

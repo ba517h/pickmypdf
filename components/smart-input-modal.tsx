@@ -167,17 +167,37 @@ export function SmartInputModal({
   };
 
   const processExtractedData = async (extractedData: ItineraryFormData) => {
+    // Generate summary from extracted data
+    let summary = '';
+    try {
+      const response = await fetch('/api/generate-summary', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          routing: extractedData.routing,
+          destination: extractedData.destination,
+          highlights: extractedData.hotels?.map(h => h.name).join(', ') + (extractedData.experiences?.length ? ', ' + extractedData.experiences.map(e => e.name).join(', ') : ''),
+          dayWiseItinerary: extractedData.dayWiseItinerary
+        })
+      });
+      if (response.ok) {
+        const result = await response.json();
+        summary = result.summary || '';
+      }
+    } catch (err) {
+      // If summary generation fails, fallback to empty
+      summary = '';
+    }
+    // Attach summary to extracted data
+    const finalData = { ...extractedData, summary };
     // Auto-save draft after successful extraction
-    saveDraft(extractedData);
-    
+    saveDraft(finalData);
     // Show success toast
     toast({
       title: "Itinerary Extracted Successfully",
       description: "AI-generated itinerary loaded. You can edit or refine it below.",
     });
-    
-    onDataParsed(extractedData);
-    
+    onDataParsed(finalData);
     // Reset form and close modal
     resetForm();
     onOpenChange(false);

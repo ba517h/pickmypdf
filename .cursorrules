@@ -3,6 +3,71 @@
 ## Project Overview
 This is a Next.js 14 application for AI-powered travel itinerary creation and PDF generation. The app uses TypeScript, Tailwind CSS, Supabase for auth/storage, and integrates with OpenAI for content extraction. **The project has gone through 7+ major development phases** from basic authentication to a sophisticated travel platform with TRUE 1:1 PDF generation.
 
+## 🚨 CRITICAL ANTI-INFINITE-LOOP RULES (HIGHEST PRIORITY)
+
+### NEVER CREATE AUTO-GENERATION LOOPS - API COST PROTECTION
+**These rules MUST be followed to prevent expensive infinite API calls:**
+
+- **NEVER** create `useEffect` hooks that auto-call OpenAI APIs based on form data changes
+- **NEVER** put API-calling functions in dependency arrays that update the same data they use
+- **NEVER** put objects/functions that recreate on data changes in useEffect dependencies
+- **NEVER** auto-generate content on every data change - use manual triggers only
+- **ALWAYS** use manual buttons for AI content generation (summary, extraction, etc.)
+- **ALWAYS** add loading states and disable buttons during API calls
+- **ALWAYS** implement strict conditions to prevent multiple simultaneous API calls
+- **IF** auto-generation is absolutely required, use debouncing + single-execution flags
+- **CRITICAL**: Monitor terminal logs for continuous API calls - STOP immediately if detected
+- **CRITICAL**: Check useEffect dependencies for objects that recreate on state changes
+
+### SPECIFIC BANNED PATTERNS
+```typescript
+// ❌ NEVER DO THIS - Creates infinite loops
+useEffect(() => {
+  if (!data.summary && data.destination) {
+    generateSummary(data); // Updates data.summary, triggers useEffect again
+  }
+}, [data]); // data in dependency array = infinite loop
+
+// ❌ NEVER DO THIS - persistence object recreates on data changes
+useEffect(() => {
+  if (draftId) {
+    const itinerary = persistence.loadItinerary(draftId); // Updates data
+  }
+}, [draftId, persistence]); // persistence recreates = infinite loop
+
+// ❌ NEVER DO THIS - hooks that return new objects/functions
+useEffect(() => {
+  loadData();
+}, [customHook]); // customHook recreates = infinite loop
+
+// ✅ ALWAYS DO THIS - Manual generation only
+const handleGenerateSummary = async () => {
+  setLoading(true);
+  try {
+    const result = await generateSummary(data);
+    updateData({ summary: result.summary });
+  } finally {
+    setLoading(false);
+  }
+};
+
+// ✅ ALWAYS DO THIS - Direct API calls, not hook functions
+useEffect(() => {
+  if (draftId) {
+    fetch(`/api/itineraries/${draftId}`)
+      .then(res => res.json())
+      .then(data => setData(data));
+  }
+}, [draftId]); // Only primitive dependencies
+```
+
+### DEPENDENCY ARRAY SAFETY RULES
+- **ONLY** include primitive values (strings, numbers, booleans) in useEffect deps
+- **NEVER** include objects, arrays, or functions unless memoized with useCallback/useMemo
+- **NEVER** include custom hook returns that recreate on state changes
+- **ALWAYS** prefer direct API calls over hook functions in useEffects
+- **ALWAYS** use refs for stable references if needed
+
 ## CRITICAL COMPONENT PROTECTION RULES
 
 ### 🚨 PDF PREVIEW COMPONENT - DO NOT MODIFY
