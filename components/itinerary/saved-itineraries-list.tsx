@@ -67,6 +67,7 @@ export function SavedItinerariesList({
 
   useEffect(() => {
     loadItineraries();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleDelete = async (id: string, title: string) => {

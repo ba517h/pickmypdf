@@ -89,15 +89,13 @@ export async function POST(request: NextRequest) {
     });
     
     // Get actual content height for truly continuous PDF
-    const contentHeight = await page.evaluate(() => {
-      const body = document.body;
-      const html = document.documentElement;
+    const contentHeight: number = await (page as any).evaluate(() => {
       return Math.max(
-        body.scrollHeight,
-        body.offsetHeight,
-        html.clientHeight,
-        html.scrollHeight,
-        html.offsetHeight
+        document.body.scrollHeight,
+        document.body.offsetHeight,
+        document.documentElement.clientHeight,
+        document.documentElement.scrollHeight,
+        document.documentElement.offsetHeight
       );
     });
 
