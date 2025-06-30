@@ -42,10 +42,40 @@ export async function POST(request: NextRequest) {
     const formData: ItineraryFormData = await request.json();
     
     console.log('Starting PDF generation for:', formData.title);
+    console.log('FormData structure:', JSON.stringify({
+      title: formData.title,
+      hasHotels: !!formData.hotels,
+      hotelsLength: formData.hotels?.length,
+      hasExperiences: !!formData.experiences,
+      experiencesLength: formData.experiences?.length,
+      hasDayWise: !!formData.dayWiseItinerary,
+      dayWiseLength: formData.dayWiseItinerary?.length,
+      hasPracticalInfo: !!formData.practicalInfo,
+      hasTips: !!formData.practicalInfo?.tips,
+      tipsLength: formData.practicalInfo?.tips?.length
+    }));
+
+    // Ensure formData has proper structure with defaults
+    const safeFormData: ItineraryFormData = {
+      ...formData,
+      hotels: formData.hotels || [],
+      experiences: formData.experiences || [],
+      dayWiseItinerary: formData.dayWiseItinerary || [],
+      tags: formData.tags || [],
+      practicalInfo: {
+        visa: formData.practicalInfo?.visa || '',
+        currency: formData.practicalInfo?.currency || '',
+        tips: formData.practicalInfo?.tips || []
+      },
+      destinationGallery: formData.destinationGallery || [],
+      cityImages: formData.cityImages || []
+    };
+    
+    console.log('Safe form data created');
     
     // Load images using DIRECT function calls (no self-referential API calls)
     console.log('Loading preview images...');
-    const previewImages = await loadPreviewImagesDirect(formData);
+    const previewImages = await loadPreviewImagesDirect(safeFormData);
     console.log('Preview images loaded');
     
     // Render the actual React component to HTML using dynamic import
@@ -54,7 +84,7 @@ export async function POST(request: NextRequest) {
     console.log('Rendering React component...');
     const componentHtml = renderToString(
       React.createElement(PdfMobileTemplate, {
-        data: formData,
+        data: safeFormData,
         previewImages: previewImages
       })
     );
@@ -62,7 +92,7 @@ export async function POST(request: NextRequest) {
     
     // Generate complete HTML document
     console.log('Generating HTML document...');
-    const htmlContent = generateHtmlDocument(componentHtml, formData);
+    const htmlContent = generateHtmlDocument(componentHtml, safeFormData);
     console.log('HTML document generated');
     
     // Launch browser with Vercel-compatible setup
@@ -129,7 +159,7 @@ export async function POST(request: NextRequest) {
         .substring(0, 50);        // Limit length
     };
 
-    const safeFilename = sanitizeFilename(formData.title || 'itinerary');
+    const safeFilename = sanitizeFilename(safeFormData.title || 'itinerary');
 
     // Return PDF as response
     return new NextResponse(pdfBuffer, {
