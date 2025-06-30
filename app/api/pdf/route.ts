@@ -24,21 +24,7 @@ async function launchBrowser() {
     const chromium = await import('@sparticuz/chromium');
     
     return await puppeteerCore.default.launch({
-      args: [
-        ...chromium.default.args,
-        '--hide-scrollbars',
-        '--disable-web-security',
-        '--no-sandbox',
-        '--disable-setuid-sandbox',
-        '--disable-dev-shm-usage',
-        '--disable-gpu',
-        '--single-process',
-        '--no-zygote',
-        '--disable-background-timer-throttling',
-        '--disable-backgrounding-occluded-windows',
-        '--disable-renderer-backgrounding'
-      ],
-      defaultViewport: { width: 1280, height: 720 },
+      args: chromium.default.args,
       executablePath: await chromium.default.executablePath(),
       headless: true,
     });
