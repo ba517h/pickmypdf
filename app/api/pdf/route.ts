@@ -24,7 +24,7 @@ async function launchBrowser() {
     const chromium = await import('@sparticuz/chromium-min');
     
     // Use remote executable path - this is the key fix for Vercel
-    const REMOTE_EXEC_PATH = 'https://github.com/Sparticuz/chromium/releases/download/v137.0.1/chromium-v137.0.1-pack.tar';
+    const REMOTE_EXEC_PATH = 'https://github.com/Sparticuz/chromium/releases/download/v137.0.1/chromium-v137.0.1-pack.x64.tar';
     
     return await puppeteerCore.default.launch({
       args: chromium.default.args,
