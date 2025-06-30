@@ -5,6 +5,33 @@ const openai = process.env.OPENAI_API_KEY ? new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 }) : null;
 
+// Vercel-compatible Puppeteer setup
+async function launchBrowser() {
+  if (process.env.NODE_ENV === 'development') {
+    // Use regular Puppeteer for development
+    const puppeteer = await import('puppeteer');
+    return await puppeteer.default.launch({
+      headless: true,
+      args: [
+        '--no-sandbox',
+        '--disable-setuid-sandbox',
+        '--disable-dev-shm-usage',
+        '--disable-gpu'
+      ]
+    });
+  } else {
+    // Use puppeteer-core with @sparticuz/chromium for production
+    const puppeteerCore = await import('puppeteer-core');
+    const chromium = await import('@sparticuz/chromium');
+    
+    return await puppeteerCore.default.launch({
+      args: chromium.default.args,
+      executablePath: await chromium.default.executablePath(),
+      headless: true,
+    });
+  }
+}
+
 export async function POST(request: NextRequest) {
   try {
     if (!openai) {
@@ -49,5 +76,57 @@ export async function POST(request: NextRequest) {
       },
       { status: 500 }
     );
+  }
+}
+
+export async function GET() {
+  let browser;
+  try {
+    console.log('Testing Puppeteer setup...');
+    
+    browser = await launchBrowser();
+    console.log('Browser launched successfully');
+    
+    const page = await browser.newPage();
+    console.log('Page created');
+    
+    await page.setContent('<html><body><h1>Test</h1></body></html>');
+    console.log('Content set');
+    
+    const pdf = await page.pdf({ 
+      format: 'A4',
+      printBackground: true 
+    });
+    console.log('PDF generated, size:', pdf.length);
+    
+    await browser.close();
+    console.log('Browser closed successfully');
+    
+    return NextResponse.json({ 
+      success: true, 
+      pdfSize: pdf.length,
+      message: 'Puppeteer working correctly'
+    });
+    
+  } catch (error) {
+    console.error('Puppeteer test error:', error);
+    
+    if (browser) {
+      try {
+        await browser.close();
+      } catch (closeError) {
+        console.error('Error closing browser:', closeError);
+      }
+    }
+    
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    const errorStack = error instanceof Error ? error.stack : 'No stack trace';
+    
+    return NextResponse.json({
+      success: false,
+      error: errorMessage,
+      stack: errorStack,
+      nodeEnv: process.env.NODE_ENV
+    }, { status: 500 });
   }
 } 
