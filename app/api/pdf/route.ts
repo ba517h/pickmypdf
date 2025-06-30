@@ -5,20 +5,70 @@ import { ItineraryFormData } from '@/lib/types';
 import { PdfMobileTemplate } from '@/components/itinerary/pdf-mobile-template';
 import { getImageUrl } from '@/lib/bing-image-api';
 
-// Function to get Chrome executable path for different environments
-function getChromeExecutablePath() {
-  if (process.env.VERCEL) {
-    // Vercel deployment
-    return '/usr/bin/google-chrome-stable';
+// Function to launch browser with multiple fallback strategies
+async function launchBrowserWithFallbacks() {
+  const commonArgs = [
+    '--no-sandbox',
+    '--disable-setuid-sandbox',
+    '--disable-dev-shm-usage',
+    '--disable-accelerated-2d-canvas',
+    '--no-first-run',
+    '--no-zygote',
+    '--single-process',
+    '--disable-gpu',
+    '--disable-background-timer-throttling',
+    '--disable-backgrounding-occluded-windows',
+    '--disable-renderer-backgrounding',
+    '--disable-features=TranslateUI',
+    '--disable-ipc-flooding-protection',
+    '--disable-background-networking'
+  ];
+
+  // Strategy 1: Try with automatic Chrome detection (works on most platforms)
+  try {
+    return await puppeteer.launch({
+      headless: true,
+      args: commonArgs,
+      timeout: 30000,
+    });
+  } catch (error) {
+    console.log('Failed to launch with automatic detection, trying fallbacks...', error);
   }
-  
-  if (process.env.AWS_LAMBDA_FUNCTION_NAME) {
-    // AWS Lambda
-    return '/opt/chrome/chrome';
+
+  // Strategy 2: Try common Vercel Chrome paths
+  const vercePaths = [
+    '/usr/bin/google-chrome-stable',
+    '/usr/bin/google-chrome',
+    '/usr/bin/chromium-browser',
+    '/usr/bin/chromium'
+  ];
+
+  for (const path of vercePaths) {
+    try {
+      return await puppeteer.launch({
+        headless: true,
+        executablePath: path,
+        args: commonArgs,
+        timeout: 30000,
+      });
+    } catch (error) {
+      console.log(`Failed to launch with path ${path}:`, error);
+    }
   }
-  
-  // Local development - let Puppeteer handle it
-  return undefined;
+
+  // Strategy 3: Try with Puppeteer bundled Chromium (if available)
+  try {
+    return await puppeteer.launch({
+      headless: true,
+      args: commonArgs,
+      timeout: 30000,
+      ignoreDefaultArgs: ['--disable-extensions'],
+    });
+  } catch (error) {
+    console.log('Failed to launch with bundled Chromium:', error);
+  }
+
+  throw new Error('Unable to launch browser with any strategy');
 }
 
 export async function POST(request: NextRequest) {
@@ -42,29 +92,8 @@ export async function POST(request: NextRequest) {
     // Generate complete HTML document
     const htmlContent = generateHtmlDocument(componentHtml, formData);
     
-    // Launch Puppeteer with optimized serverless configuration
-    const chromeExecutablePath = getChromeExecutablePath();
-    
-    browser = await puppeteer.launch({
-      headless: true,
-      ...(chromeExecutablePath && { executablePath: chromeExecutablePath }),
-      // Optimized args for serverless environments (Vercel)
-      args: [
-        '--no-sandbox',
-        '--disable-setuid-sandbox',
-        '--disable-dev-shm-usage',
-        '--disable-accelerated-2d-canvas',
-        '--no-first-run',
-        '--no-zygote',
-        '--single-process', // Important for serverless
-        '--disable-gpu',
-        '--disable-background-timer-throttling',
-        '--disable-backgrounding-occluded-windows',
-        '--disable-renderer-backgrounding'
-      ],
-      // Timeout configuration for serverless
-      timeout: 30000,
-    });
+    // Launch browser with fallback strategies
+    browser = await launchBrowserWithFallbacks();
     
     const page = await browser.newPage();
     
