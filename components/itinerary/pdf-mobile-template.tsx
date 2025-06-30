@@ -88,6 +88,13 @@ const CompassIcon = () => (
   </svg>
 );
 
+function getProxiedImageUrl(url: string) {
+  if (url && /^https?:\/\//i.test(url)) {
+    return `https://images.weserv.nl/?url=${encodeURIComponent(url)}&w=420&output=jpg&q=75`;
+  }
+  return url;
+}
+
 export function PdfMobileTemplate({ data, previewImages }: PdfMobileTemplateProps) {
   // Ensure all arrays have default values to prevent undefined map errors
   const safeData = {
@@ -113,7 +120,7 @@ export function PdfMobileTemplate({ data, previewImages }: PdfMobileTemplateProp
           <>
             <div className="absolute inset-0">
               <img 
-                src={`https://images.weserv.nl/?url=${encodeURIComponent(safeData.mainImage || previewImages.main || `https://picsum.photos/800/400?random=1`)}&w=420&output=jpg&q=75`} 
+                src={getProxiedImageUrl(safeData.mainImage || previewImages.main || `https://picsum.photos/800/400?random=1`)} 
                 alt="Header background" 
                 className="w-full h-full object-cover"
               />
@@ -227,7 +234,7 @@ export function PdfMobileTemplate({ data, previewImages }: PdfMobileTemplateProp
                   <div key={index} className="bg-gray-50 rounded-xl p-4 border border-gray-200">
                     <div className="h-24 bg-gray-200 rounded-lg mb-3 overflow-hidden">
                       <img 
-                        src={`https://images.weserv.nl/?url=${encodeURIComponent(previewImages.hotels[index] || `https://picsum.photos/400/150?random=${2000 + index}`)}&w=420&output=jpg&q=75`}
+                        src={getProxiedImageUrl(previewImages.hotels[index] || `https://picsum.photos/400/150?random=${2000 + index}`)}
                         alt={hotel.name}
                         className="w-full h-full object-cover"
                       />
@@ -257,7 +264,7 @@ export function PdfMobileTemplate({ data, previewImages }: PdfMobileTemplateProp
                   <div key={index} className="flex items-start gap-4 bg-white border border-gray-200 rounded-lg p-4">
                     <div className="w-16 h-16 bg-gray-200 rounded-lg overflow-hidden flex-shrink-0">
                       <img 
-                        src={`https://images.weserv.nl/?url=${encodeURIComponent(previewImages.experiences[index] || `https://picsum.photos/120/120?random=${3000 + index}`)}&w=420&output=jpg&q=75`}
+                        src={getProxiedImageUrl(previewImages.experiences[index] || `https://picsum.photos/120/120?random=${3000 + index}`)}
                         alt={experience.name}
                         className="w-full h-full object-cover"
                       />
@@ -308,7 +315,7 @@ export function PdfMobileTemplate({ data, previewImages }: PdfMobileTemplateProp
                         
                         <div className="h-32 bg-gray-200 rounded-lg mb-3 overflow-hidden">
                           <img 
-                            src={`https://images.weserv.nl/?url=${encodeURIComponent(previewImages.days[index] || `https://picsum.photos/500/200?random=${4000 + index}`)}&w=420&output=jpg&q=75`}
+                            src={getProxiedImageUrl(previewImages.days[index] || `https://picsum.photos/500/200?random=${4000 + index}`)}
                             alt={`Day ${day.day}`}
                             className="w-full h-full object-cover"
                           />
@@ -343,7 +350,7 @@ export function PdfMobileTemplate({ data, previewImages }: PdfMobileTemplateProp
                     <div key={index} className="relative group">
                       <div className="h-24 bg-gray-200 rounded-lg overflow-hidden">
                         <img 
-                          src={`https://images.weserv.nl/?url=${encodeURIComponent(galleryItem.image || `https://picsum.photos/300/200?random=${5000 + index}`)}&w=420&output=jpg&q=75`}
+                          src={getProxiedImageUrl(galleryItem.image || `https://picsum.photos/300/200?random=${5000 + index}`)}
                           alt={galleryItem.name}
                           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                         />
@@ -367,7 +374,7 @@ export function PdfMobileTemplate({ data, previewImages }: PdfMobileTemplateProp
                     <div key={index} className="relative">
                       <div className="h-24 bg-gray-200 rounded-lg overflow-hidden">
                         <img 
-                          src={`https://images.weserv.nl/?url=${encodeURIComponent(`https://picsum.photos/300/200?random=${5000 + index}`)}&w=420&output=jpg&q=75`}
+                          src={getProxiedImageUrl(`https://picsum.photos/300/200?random=${5000 + index}`)}
                           alt={`${safeData.destination} highlight ${index + 1}`}
                           className="w-full h-full object-cover"
                         />

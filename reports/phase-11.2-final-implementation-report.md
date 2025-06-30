@@ -90,4 +90,17 @@ All changes have been committed and pushed to git for full traceability and futu
 
 ---
 
+## 10. Robust Image Proxy Logic (Final Tweak)
+- **Problem:** Some cover/gallery images (uploads, Supabase, data URLs) were not displaying after proxying, because the proxy only works for public HTTP(S) images.
+- **Solution:**
+  - Added a `getProxiedImageUrl(url)` helper to both PDF templates.
+  - Only public HTTP(S) images are proxied for downscaling and compression.
+  - Data URLs, local files, and private Supabase URLs are used as-is (not proxied).
+- **Impact:**
+  - All cover and gallery images now display correctly, regardless of source.
+  - Public images are still optimized for PDF size.
+  - No risk of blank images for user uploads or private assets.
+
+---
+
 **Phase 11.2 is now complete and fully production-ready.** 
