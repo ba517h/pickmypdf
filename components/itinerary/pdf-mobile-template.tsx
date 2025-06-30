@@ -1,15 +1,30 @@
 import React from "react";
+import { Badge } from "@/components/ui/badge";
+import { 
+  MapPin, 
+  Calendar, 
+  Clock, 
+  Star,
+  Camera,
+  Plane,
+  Users,
+  Heart,
+  Compass
+} from "lucide-react";
 import { ItineraryFormData } from "@/lib/types";
+import { PickMyPDFLogo } from "@/components/icons";
+
+interface PreviewImages {
+  main: string;
+  hotels: string[];
+  experiences: string[];
+  days: string[];
+  cities: string[];
+}
 
 interface PdfMobileTemplateProps {
   data: ItineraryFormData;
-  previewImages: {
-    main: string;
-    hotels: string[];
-    experiences: string[];
-    days: string[];
-    cities: string[];
-  };
+  previewImages: PreviewImages;
 }
 
 // SVG icon components for server-side rendering (exact Lucide icon paths)
@@ -73,18 +88,11 @@ const CompassIcon = () => (
   </svg>
 );
 
-// Badge component for server-side rendering (EXACT MATCH)
-const Badge = ({ children, className, ...props }: { children: React.ReactNode; className?: string; variant?: string }) => (
-  <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${className || ''}`} {...props}>
-    {children}
-  </span>
-);
-
 export function PdfMobileTemplate({ data, previewImages }: PdfMobileTemplateProps) {
   return (
     <div className="h-fit overflow-hidden shadow-lg font-manrope w-[420px]">
       {/* Header Section with Background Image - Cover Page - EXACT COPY */}
-      <div className="relative py-6 px-4 text-white overflow-hidden flex flex-col justify-between">
+      <div className="relative pt-12 pb-12 px-6 text-white overflow-hidden flex flex-col justify-between min-h-[320px]">
         {/* Background Image */}
         {(data.mainImage || previewImages.main || data.destination) && (
           <>
@@ -96,8 +104,8 @@ export function PdfMobileTemplate({ data, previewImages }: PdfMobileTemplateProp
               />
             </div>
             {/* Gradient Overlays for Text Readability */}
-            <div className="absolute inset-0 bg-gradient-to-br from-blue-900/65 via-blue-800/60 to-blue-900/70" />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-black/15" />
+            <div className="absolute inset-0 bg-gradient-to-br from-blue-900/75 via-blue-800/70 to-blue-900/80" />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-black/20" />
           </>
         )}
         
@@ -107,51 +115,56 @@ export function PdfMobileTemplate({ data, previewImages }: PdfMobileTemplateProp
         )}
         
         {/* Content - positioned above background */}
-        <div className="relative z-10 flex flex-col justify-between h-full p-4">
-          {/* Top Section - Header Info */}
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-sm font-medium tracking-wide drop-shadow-sm">TRAVEL ITINERARY</h2>
-              <div className="text-xs mt-1 opacity-90 drop-shadow-sm">PickMyPDF</div>
+        <div className="relative z-10 flex flex-col justify-between h-full">
+          {/* Center Section - Logo and Main Title */}
+          <div className="text-center py-12">
+            {/* PickMyPDF Logo */}
+            <div className="flex justify-center mb-16">
+              <PickMyPDFLogo className="w-36 h-auto drop-shadow-lg" />
             </div>
-            <PlaneIcon />
-          </div>
-          
-          {/* Center Section - Main Title */}
-          <div className="text-center py-8">
+            
             {data.title ? (
-              <h1 className="text-4xl font-bold mb-6 leading-tight drop-shadow-md">{data.title}</h1>
+              <h1 className="text-3xl font-bold mb-6 leading-tight drop-shadow-md max-w-sm mx-auto">{data.title}</h1>
             ) : (
-              <h1 className="text-4xl font-bold mb-6 leading-tight opacity-80 drop-shadow-md">Your Travel Itinerary</h1>
+              <h1 className="text-3xl font-bold mb-6 leading-tight opacity-80 drop-shadow-md max-w-sm mx-auto">Your Travel Itinerary</h1>
             )}
             
             <div className="flex flex-wrap justify-center gap-6 text-base mb-6">
               {data.destination && (
-                <div className="flex items-center gap-2 drop-shadow-sm">
-                  <MapPinIcon />
+                <div className="flex items-center gap-1 drop-shadow-sm">
+                  <MapPin className="w-5 h-5" />
                   <span className="font-medium">{data.destination}</span>
                 </div>
               )}
               {data.duration && (
-                <div className="flex items-center gap-2 drop-shadow-sm">
-                  <CalendarIcon />
+                <div className="flex items-center gap-1 drop-shadow-sm">
+                  <Calendar className="w-5 h-5" />
                   <span className="font-medium">{data.duration}</span>
                 </div>
               )}
             </div>
+
+            {/* Cost in INR Block */}
+            <div className="mb-6">
+              <div className="inline-block bg-white/25 backdrop-blur-sm text-white rounded-full px-4 py-2 font-semibold text-base drop-shadow-md">
+                ₹{data.costInINR || "1,42,000 / person"}
+              </div>
+            </div>
           </div>
           
           {/* Bottom Section - Tags */}
-          <div className="flex justify-center">
-            {data.tags.length > 0 && (
-              <div className="flex flex-wrap justify-center gap-3">
-                {data.tags.map((tag, index) => (
-                  <Badge key={index} variant="secondary" className="text-sm px-4 py-2 bg-white/30 text-white border-white/50 hover:bg-white/40 backdrop-blur-sm drop-shadow-sm">
+          <div className="flex justify-center pb-6">
+            <div className="flex flex-wrap justify-center gap-2">
+              {(() => {
+                const defaultTags = ["Adventure", "Cultural", "Photography", "Foodie"];
+                const displayTags = data.tags.length > 0 ? data.tags : defaultTags;
+                return displayTags.map((tag, index) => (
+                  <Badge key={index} variant="secondary" className="text-sm px-3 py-1 bg-white/25 text-white backdrop-blur-sm drop-shadow-sm">
                     {tag}
                   </Badge>
-                ))}
-              </div>
-            )}
+                ));
+              })()}
+            </div>
           </div>
         </div>
       </div>

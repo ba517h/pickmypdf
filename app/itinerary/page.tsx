@@ -10,11 +10,14 @@ import { FileText, Clock, MapPin, Star, Calendar, Camera, Settings, Download, Ar
 import { loadDraft, clearDraft, formatDraftTimestamp } from "@/lib/storage";
 import { useToast } from "@/components/ui/use-toast";
 
-import { OverviewStep } from "@/components/itinerary/overview-step";
-import { HighlightsStep } from "@/components/itinerary/highlights-step";
 import { DayWiseStep } from "@/components/itinerary/day-wise-step";
 import { GalleryStep } from "@/components/itinerary/gallery-step";
 import { OptionalBlocksStep } from "@/components/itinerary/optional-blocks-step";
+import { CoverPageStep } from "@/components/itinerary/cover-page-step";
+import { TripOverviewStep } from "@/components/itinerary/trip-overview-step";
+import { AccommodationsStep } from "@/components/itinerary/accommodations-step";
+import { ExperiencesStep } from "@/components/itinerary/experiences-step";
+import { PracticalInfoStep } from "@/components/itinerary/practical-info-step";
 import { PdfPreview } from "@/components/itinerary/pdf-preview";
 import { SmartInputModal } from "@/components/smart-input-modal";
 import { SaveStatusIndicator } from "@/components/ui/save-status-indicator";
@@ -27,39 +30,60 @@ import { ItineraryResponse } from "@/lib/schemas";
 
 const sections = [
   { 
-    id: "overview", 
-    title: "Overview", 
-    description: "Basic trip information",
+    id: "cover", 
+    title: "Cover Page", 
+    description: "Trip title and header",
     icon: FileText,
     step: 1
   },
   { 
-    id: "highlights", 
-    title: "Highlights", 
-    description: "Hotels and experiences",
-    icon: Star,
+    id: "overview", 
+    title: "Trip Overview", 
+    description: "Basic trip information",
+    icon: MapPin,
     step: 2
   },
   { 
+    id: "accommodations", 
+    title: "Accommodations", 
+    description: "Hotels and stays",
+    icon: Star,
+    step: 3
+  },
+  { 
+    id: "experiences", 
+    title: "Experiences & Activities", 
+    description: "Things to do",
+    icon: Camera,
+    step: 4
+  },
+  { 
     id: "daywise", 
-    title: "Day-wise", 
+    title: "Day-wise Plan", 
     description: "Daily itinerary",
     icon: Calendar,
-    step: 3
+    step: 5
   },
   { 
     id: "gallery", 
     title: "Gallery", 
     description: "Destination showcase",
     icon: Camera,
-    step: 4
+    step: 6
+  },
+  { 
+    id: "practical", 
+    title: "Practical Info", 
+    description: "Visa, currency, tips",
+    icon: Clock,
+    step: 7
   },
   { 
     id: "optional", 
-    title: "Optional", 
+    title: "Optional Blocks", 
     description: "Additional suggestions",
     icon: Settings,
-    step: 5
+    step: 8
   }
 ];
 
@@ -68,7 +92,7 @@ export default function ItineraryCreatorPage() {
   const router = useRouter();
   const draftId = searchParams.get('draftId');
   
-  const [activeSection, setActiveSection] = useState("overview");
+  const [activeSection, setActiveSection] = useState("cover");
   const [showSavedItineraries, setShowSavedItineraries] = useState(false);
   const [showDraftPrompt, setShowDraftPrompt] = useState(false);
   const [draftData, setDraftData] = useState<{ data: ItineraryFormData; timestamp: string } | null>(null);
@@ -80,8 +104,9 @@ export default function ItineraryCreatorPage() {
     destination: "",
     duration: "",
     routing: "",
-    tags: [],
+    tags: ["Adventure", "Cultural", "Photography", "Foodie"],
     tripType: "",
+    costInINR: "1,42,000 / person",
     mainImage: "",
     cityImages: [],
     hotels: [],
@@ -123,7 +148,7 @@ export default function ItineraryCreatorPage() {
           setFormData(itinerary.form_data);
           setCurrentItineraryId(itinerary.id);
           setCurrentItineraryTitle(itinerary.title);
-          setActiveSection("overview");
+          setActiveSection("cover");
 
           toast({
             title: "Itinerary Loaded",
@@ -156,14 +181,14 @@ export default function ItineraryCreatorPage() {
 
   const handleDataParsed = (data: ItineraryFormData) => {
     setFormData(data);
-    setActiveSection("overview");
+    setActiveSection("cover");
   };
 
   // Handle draft prompt actions
   const handleContinueWithDraft = () => {
     if (draftData) {
       setFormData(draftData.data);
-      setActiveSection("overview");
+      setActiveSection("cover");
       setShowDraftPrompt(false);
       
       toast({
@@ -192,11 +217,17 @@ export default function ItineraryCreatorPage() {
       setCurrentItineraryId(itinerary.id);
       setCurrentItineraryTitle(itinerary.title);
       setShowSavedItineraries(false);
-      setActiveSection("overview");
+      setActiveSection("cover");
 
       toast({
         title: "Itinerary Loaded",
         description: `"${itinerary.title}" has been loaded for editing.`,
+      });
+    } else {
+      toast({
+        title: "Load Failed",
+        description: "Could not load the itinerary.",
+        variant: "destructive",
       });
     }
   };
@@ -208,8 +239,9 @@ export default function ItineraryCreatorPage() {
       destination: "",
       duration: "",
       routing: "",
-      tags: [],
+      tags: ["Adventure", "Cultural", "Photography", "Foodie"],
       tripType: "",
+      costInINR: "1,42,000 / person",
       mainImage: "",
       cityImages: [],
       hotels: [],
@@ -303,31 +335,43 @@ export default function ItineraryCreatorPage() {
 
   const renderActiveSection = () => {
     switch (activeSection) {
+      case "cover":
+        return <CoverPageStep data={formData} onUpdate={updateFormData} form={form} />;
       case "overview":
-        return <OverviewStep data={formData} onUpdate={updateFormData} form={form} />;
-      case "highlights":
-        return <HighlightsStep data={formData} onUpdate={updateFormData} form={form} />;
+        return <TripOverviewStep data={formData} onUpdate={updateFormData} form={form} />;
+      case "accommodations":
+        return <AccommodationsStep data={formData} onUpdate={updateFormData} form={form} />;
+      case "experiences":
+        return <ExperiencesStep data={formData} onUpdate={updateFormData} form={form} />;
       case "daywise":
         return <DayWiseStep data={formData} onUpdate={updateFormData} form={form} />;
       case "gallery":
         return <GalleryStep data={formData} onUpdate={updateFormData} form={form} />;
+      case "practical":
+        return <PracticalInfoStep data={formData} onUpdate={updateFormData} form={form} />;
       case "optional":
         return <OptionalBlocksStep data={formData} onUpdate={updateFormData} form={form} />;
       default:
-        return <OverviewStep data={formData} onUpdate={updateFormData} form={form} />;
+        return <CoverPageStep data={formData} onUpdate={updateFormData} form={form} />;
     }
   };
 
   const getSectionStatus = (sectionId: string) => {
     switch (sectionId) {
+      case "cover":
+        return formData.title && formData.destination;
       case "overview":
-        return formData.title && formData.destination && formData.duration;
-      case "highlights":
-        return formData.hotels.length > 0 || formData.experiences.length > 0;
+        return formData.destination && formData.duration && formData.routing;
+      case "accommodations":
+        return formData.hotels.length > 0;
+      case "experiences":
+        return formData.experiences.length > 0;
       case "daywise":
         return formData.dayWiseItinerary.length > 0;
       case "gallery":
         return formData.destinationGallery && formData.destinationGallery.length > 0;
+      case "practical":
+        return formData.practicalInfo.visa || formData.practicalInfo.currency || formData.practicalInfo.tips.length > 0;
       case "optional":
         return formData.withKids || formData.withFamily || formData.offbeatSuggestions;
       default:

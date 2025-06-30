@@ -17,6 +17,7 @@ export interface ItineraryFormData {
   routing: string;
   tags: string[];
   tripType: string;
+  costInINR?: string;
   
   // Main itinerary image
   mainImage?: string;

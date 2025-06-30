@@ -1,4 +1,5 @@
 import { LoaderCircle, LogIn, LogOut, LucideProps, AlertCircle, Home } from "lucide-react";
+import React from 'react';
 
 export const Icons = {
   logIn: LogIn,
@@ -34,3 +35,15 @@ export const Icons = {
     </svg>
   ),
 };
+
+export function PickMyPDFLogo({ className = "w-32 h-auto" }: { className?: string }) {
+  return (
+    <div className={className}>
+      <img 
+        src="/pdflogo.svg" 
+        alt="PickMyPDF Logo" 
+        className="w-full h-auto"
+      />
+    </div>
+  );
+}

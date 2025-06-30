@@ -4,8 +4,6 @@ import { useState } from "react";
 import { UseFormReturn } from "react-hook-form";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -13,28 +11,17 @@ import { X, Plus } from "lucide-react";
 import { ImageInput } from "@/components/ui/image-input";
 import { ItineraryFormData } from "@/lib/types";
 
-interface OverviewStepProps {
+interface CoverPageStepProps {
   data: ItineraryFormData;
   onUpdate: (data: Partial<ItineraryFormData>) => void;
   form: UseFormReturn<ItineraryFormData>;
 }
 
-const tripTypes = [
-  "Adventure",
-  "Relaxation", 
-  "Cultural",
-  "Business",
-  "Family",
-  "Romantic",
-  "Solo Travel",
-  "Group Travel",
-  "Backpacking",
-  "Luxury"
-];
-
-export function OverviewStep({ data, onUpdate, form }: OverviewStepProps) {
+export function CoverPageStep({ data, onUpdate, form }: CoverPageStepProps) {
   const [newTag, setNewTag] = useState("");
-  const [newCity, setNewCity] = useState("");
+  const [showCustomInput, setShowCustomInput] = useState(false);
+
+  const recommendedTags = ["Adventure", "Cultural", "Photography", "Foodie", "Budget", "Luxury", "Nature", "Urban", "Beach", "Mountains", "Backpacking", "Family-Friendly"];
 
   const handleInputChange = (field: keyof ItineraryFormData, value: string) => {
     onUpdate({ [field]: value });
@@ -45,6 +32,7 @@ export function OverviewStep({ data, onUpdate, form }: OverviewStepProps) {
       const updatedTags = [...data.tags, newTag.trim()];
       onUpdate({ tags: updatedTags });
       setNewTag("");
+      setShowCustomInput(false);
     }
   };
 
@@ -53,43 +41,33 @@ export function OverviewStep({ data, onUpdate, form }: OverviewStepProps) {
     onUpdate({ tags: updatedTags });
   };
 
-  const addCity = () => {
-    if (newCity.trim()) {
-      const existingCities = data.cityImages || [];
-      if (!existingCities.some(city => city.city === newCity.trim())) {
-        const updatedCities = [...existingCities, { city: newCity.trim(), image: "" }];
-        onUpdate({ cityImages: updatedCities });
-        setNewCity("");
-      }
+  const addRecommendedTag = (tag: string) => {
+    if (!data.tags.includes(tag)) {
+      const updatedTags = [...data.tags, tag];
+      onUpdate({ tags: updatedTags });
     }
   };
 
-  const removeCity = (cityToRemove: string) => {
-    const updatedCities = (data.cityImages || []).filter(city => city.city !== cityToRemove);
-    onUpdate({ cityImages: updatedCities });
-  };
-
-  const updateCityImage = (cityName: string, imageUrl: string) => {
-    const updatedCities = (data.cityImages || []).map(city =>
-      city.city === cityName ? { ...city, image: imageUrl } : city
-    );
-    onUpdate({ cityImages: updatedCities });
-  };
-
-  const handleKeyPress = (e: React.KeyboardEvent, action: 'tag' | 'city') => {
+  const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === "Enter") {
       e.preventDefault();
-      if (action === 'tag') addTag();
-      if (action === 'city') addCity();
+      addTag();
     }
   };
 
   return (
     <div className="space-y-6">
+      <div className="space-y-2">
+        <h2 className="text-xl font-semibold">Cover Page</h2>
+        <p className="text-muted-foreground">
+          Create an attractive cover page for your travel itinerary
+        </p>
+      </div>
+
       {/* Main Itinerary Image */}
       <Card>
         <CardHeader>
-          <CardTitle>Main Itinerary Image</CardTitle>
+          <CardTitle>Cover Image</CardTitle>
         </CardHeader>
         <CardContent>
           <ImageInput
@@ -143,44 +121,6 @@ export function OverviewStep({ data, onUpdate, form }: OverviewStepProps) {
         </p>
       </div>
 
-      {/* Routing */}
-      <div className="space-y-2">
-        <Label htmlFor="routing">Routing</Label>
-        <Textarea
-          id="routing"
-          placeholder="e.g., Bangkok → Chiang Mai → Hanoi → Ho Chi Minh City → Siem Reap → Bangkok"
-          value={data.routing}
-          onChange={(e) => handleInputChange("routing", e.target.value)}
-          rows={3}
-        />
-        <p className="text-sm text-muted-foreground">
-          Describe your travel route and major stops
-        </p>
-      </div>
-
-      {/* Trip Type */}
-      <div className="space-y-2">
-        <Label>Trip Type</Label>
-        <Select
-          value={data.tripType}
-          onValueChange={(value) => handleInputChange("tripType", value)}
-        >
-          <SelectTrigger>
-            <SelectValue placeholder="Select trip type" />
-          </SelectTrigger>
-          <SelectContent>
-            {tripTypes.map((type) => (
-              <SelectItem key={type} value={type}>
-                {type}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <p className="text-sm text-muted-foreground">
-          What kind of trip is this?
-        </p>
-      </div>
-
       {/* Cost in INR */}
       <div className="space-y-2">
         <Label htmlFor="costInINR">Estimated Cost (₹)</Label>
@@ -196,42 +136,92 @@ export function OverviewStep({ data, onUpdate, form }: OverviewStepProps) {
       </div>
 
       {/* Tags */}
-      <div className="space-y-2">
-        <Label>Tags (Optional)</Label>
-        <div className="flex gap-2">
-          <Input
-            placeholder="Add a tag"
-            value={newTag}
-            onChange={(e) => setNewTag(e.target.value)}
-            onKeyPress={(e) => handleKeyPress(e, 'tag')}
-          />
+      <div className="space-y-4">
+        <Label>Tags</Label>
+        
+        {/* Tag Pills - Selected first, then recommendations, then custom */}
+        <div className="flex flex-wrap gap-2">
+          {/* Selected tags first - with checkmark */}
+          {data.tags.map((tag) => (
+            <Button
+              key={tag}
+              type="button"
+              variant="secondary"
+              size="sm"
+              className="text-xs h-7 bg-blue-100 text-blue-800 hover:bg-blue-200"
+            >
+              ✓ {tag}
+              <button
+                type="button"
+                onClick={() => removeTag(tag)}
+                className="ml-1 hover:text-destructive"
+              >
+                <X className="w-3 h-3" />
+              </button>
+            </Button>
+          ))}
+          
+          {/* Unselected recommended tags */}
+          {recommendedTags
+            .filter(tag => !data.tags.includes(tag))
+            .map((tag) => (
+              <Button
+                key={tag}
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => addRecommendedTag(tag)}
+                className="text-xs h-7"
+              >
+                + {tag}
+              </Button>
+            ))}
+          
+          {/* Custom tag pill */}
           <Button
             type="button"
             variant="outline"
-            onClick={addTag}
-            disabled={!newTag.trim()}
+            size="sm"
+            onClick={() => setShowCustomInput(!showCustomInput)}
+            className="text-xs h-7 border-dashed"
           >
-            <Plus className="w-4 h-4" />
+            + Add Custom
           </Button>
         </div>
-        {data.tags.length > 0 && (
-          <div className="flex flex-wrap gap-2 mt-2">
-            {data.tags.map((tag) => (
-              <Badge key={tag} variant="secondary" className="gap-1">
-                {tag}
-                <button
-                  type="button"
-                  onClick={() => removeTag(tag)}
-                  className="hover:text-destructive"
-                >
-                  <X className="w-3 h-3" />
-                </button>
-              </Badge>
-            ))}
+
+        {/* Custom Tag Input - shown when custom pill is clicked */}
+        {showCustomInput && (
+          <div className="flex gap-2 mt-3">
+            <Input
+              placeholder="Enter custom tag"
+              value={newTag}
+              onChange={(e) => setNewTag(e.target.value)}
+              onKeyPress={handleKeyPress}
+              autoFocus
+            />
+            <Button
+              type="button"
+              variant="outline"
+              onClick={addTag}
+              disabled={!newTag.trim()}
+            >
+              Add
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={() => {
+                setShowCustomInput(false);
+                setNewTag("");
+              }}
+            >
+              Cancel
+            </Button>
           </div>
         )}
+        
         <p className="text-sm text-muted-foreground">
-          Add tags to categorize your trip (e.g., budget, foodie, nature)
+          Tags help categorize your trip and will appear on the cover page
         </p>
       </div>
     </div>
