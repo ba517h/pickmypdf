@@ -24,13 +24,32 @@ async function launchBrowser() {
     const puppeteerCore = await import('puppeteer-core');
     const chromium = await import('@sparticuz/chromium-min');
     
-    // Use remote executable path - this is the key fix for Vercel
-    const REMOTE_EXEC_PATH = 'https://github.com/Sparticuz/chromium/releases/download/v137.0.1/chromium-v137.0.1-pack.x64.tar';
+    // Performance optimizations for Vercel - Use default/correct API
+    const executablePath = await chromium.default.executablePath();
     
     return await puppeteerCore.default.launch({
-      args: chromium.default.args,
-      executablePath: await chromium.default.executablePath(REMOTE_EXEC_PATH),
+      args: [
+        ...chromium.default.args,
+        '--disable-web-security',
+        '--disable-features=VizDisplayCompositor',
+        '--disable-background-timer-throttling',
+        '--disable-backgrounding-occluded-windows',
+        '--disable-renderer-backgrounding',
+        '--disable-background-networking',
+        '--memory-pressure-off',
+        '--disable-extensions',
+        '--disable-plugins',
+        '--disable-sync',
+        '--disable-translate',
+        '--hide-scrollbars',
+        '--mute-audio',
+        '--no-first-run',
+        '--disable-notifications',
+        '--disable-default-apps'
+      ],
+      executablePath,
       headless: true,
+      timeout: 30000
     });
   }
 }

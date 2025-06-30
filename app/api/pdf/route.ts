@@ -15,7 +15,15 @@ async function launchBrowser() {
         '--no-sandbox',
         '--disable-setuid-sandbox',
         '--disable-dev-shm-usage',
-        '--disable-gpu'
+        '--disable-gpu',
+        '--disable-web-security',
+        '--disable-features=VizDisplayCompositor',
+        '--disable-background-timer-throttling',
+        '--disable-backgrounding-occluded-windows',
+        '--disable-renderer-backgrounding',
+        '--disable-background-networking',
+        '--memory-pressure-off',
+        '--disable-extensions'
       ]
     });
   } else {
@@ -23,13 +31,32 @@ async function launchBrowser() {
     const puppeteerCore = await import('puppeteer-core');
     const chromium = await import('@sparticuz/chromium-min');
     
-    // Use remote executable path - this is the key fix for Vercel
-    const REMOTE_EXEC_PATH = 'https://github.com/Sparticuz/chromium/releases/download/v137.0.1/chromium-v137.0.1-pack.x64.tar';
+    // Performance optimizations for Vercel - Use default/correct API
+    const executablePath = await chromium.default.executablePath();
     
     return await puppeteerCore.default.launch({
-      args: chromium.default.args,
-      executablePath: await chromium.default.executablePath(REMOTE_EXEC_PATH),
+      args: [
+        ...chromium.default.args,
+        '--disable-web-security',
+        '--disable-features=VizDisplayCompositor',
+        '--disable-background-timer-throttling',
+        '--disable-backgrounding-occluded-windows',
+        '--disable-renderer-backgrounding',
+        '--disable-background-networking',
+        '--memory-pressure-off',
+        '--disable-extensions',
+        '--disable-plugins',
+        '--disable-sync',
+        '--disable-translate',
+        '--hide-scrollbars',
+        '--mute-audio',
+        '--no-first-run',
+        '--disable-notifications',
+        '--disable-default-apps'
+      ],
+      executablePath,
       headless: true,
+      timeout: 30000
     });
   }
 }
@@ -106,70 +133,48 @@ export async function POST(request: NextRequest) {
     const page = await browser.newPage();
     console.log('Page created');
 
-    // Set mobile viewport for consistent rendering
-    await page.setViewport({
-      width: 420,
-      height: 800,
-      deviceScaleFactor: 2
+    // Performance optimizations for faster PDF generation
+    await page.setViewport({ width: 420, height: 1080, deviceScaleFactor: 1 });
+    await page.evaluateOnNewDocument(() => {
+      // Disable animations for faster rendering
+      const css = `
+        *, *::before, *::after {
+          animation-duration: 0s !important;
+          animation-delay: 0s !important;
+          transition-duration: 0s !important;
+          transition-delay: 0s !important;
+        }
+      `;
+      const style = document.createElement('style');
+      style.appendChild(document.createTextNode(css));
+      document.head.appendChild(style);
     });
-    console.log('Viewport set');
     
-    // Set content and wait for images to load with timeout
-    console.log('Setting page content...');
-    await page.setContent(htmlContent, {
-      waitUntil: 'networkidle0',
-      timeout: 60000
+    console.log('Setting HTML content for PDF generation...');
+    await page.setContent(htmlContent, { 
+      waitUntil: 'domcontentloaded',
+      timeout: 15000 
     });
-    console.log('Page content set');
-
-    // Get actual content height for truly continuous PDF
-    console.log('Getting content height...');
-    const contentHeight: number = await (page as any).evaluate(() => {
-      return Math.max(
-        document.body.scrollHeight,
-        document.body.offsetHeight,
-        document.documentElement.clientHeight,
-        document.documentElement.scrollHeight,
-        document.documentElement.offsetHeight
-      );
-    });
-    console.log('Content height:', contentHeight);
-
-    // Generate truly continuous PDF - single page with exact content height
+    
     console.log('Generating PDF...');
-    const pdfBuffer = await page.pdf({
-      printBackground: true,
-      preferCSSPageSize: false,  // Don't use CSS page size
-      margin: { top: '0px', bottom: '0px', left: '0px', right: '0px' },
-      // Force single continuous page with exact dimensions
+    const pdf = await page.pdf({
       width: '420px',
-      height: `${contentHeight}px`,  // Exact height = no page breaks!
-      pageRanges: '1',  // Single page only
+      printBackground: true,
+      preferCSSPageSize: true,
+      timeout: 20000
     });
-    console.log('PDF generated successfully, size:', pdfBuffer.length);
 
+    await page.close();
     await browser.close();
-    browser = null;
-    console.log('Browser closed');
+
+    console.log(`PDF generated successfully. Size: ${pdf.length} bytes`);
     
-    // Sanitize filename to remove Unicode characters that break headers
-    const sanitizeFilename = (filename: string): string => {
-      return filename
-        .replace(/[^\w\s-]/g, '') // Remove special characters, keep letters, numbers, spaces, hyphens
-        .replace(/\s+/g, '-')     // Replace spaces with hyphens
-        .replace(/-+/g, '-')      // Replace multiple hyphens with single hyphen
-        .trim()                   // Remove leading/trailing whitespace
-        .substring(0, 50);        // Limit length
-    };
-
-    const safeFilename = sanitizeFilename(safeFormData.title || 'itinerary');
-
-    // Return PDF as response
-    return new NextResponse(pdfBuffer, {
+    return new NextResponse(pdf, {
       headers: {
         'Content-Type': 'application/pdf',
-        'Content-Disposition': `attachment; filename="${safeFilename}.pdf"`
-      }
+        'Content-Disposition': 'attachment; filename="itinerary.pdf"',
+        'Content-Length': pdf.length.toString(),
+      },
     });
 
   } catch (error) {
