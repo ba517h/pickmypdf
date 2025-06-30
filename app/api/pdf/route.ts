@@ -3,13 +3,32 @@ import puppeteer from 'puppeteer';
 import React from 'react';
 import { ItineraryFormData } from '@/lib/types';
 import { PdfMobileTemplate } from '@/components/itinerary/pdf-mobile-template';
+import { getImageUrl } from '@/lib/bing-image-api';
+
+// Function to get Chrome executable path for different environments
+function getChromeExecutablePath() {
+  if (process.env.VERCEL) {
+    // Vercel deployment
+    return '/usr/bin/google-chrome-stable';
+  }
+  
+  if (process.env.AWS_LAMBDA_FUNCTION_NAME) {
+    // AWS Lambda
+    return '/opt/chrome/chrome';
+  }
+  
+  // Local development - let Puppeteer handle it
+  return undefined;
+}
 
 export async function POST(request: NextRequest) {
+  let browser;
+  
   try {
     const formData: ItineraryFormData = await request.json();
     
-    // Load images using the SAME logic as PdfPreview component
-    const previewImages = await loadPreviewImages(formData);
+    // Load images using DIRECT function calls (no self-referential API calls)
+    const previewImages = await loadPreviewImagesDirect(formData);
     
     // Render the actual React component to HTML using dynamic import
     const { renderToString } = await import('react-dom/server');
@@ -23,10 +42,28 @@ export async function POST(request: NextRequest) {
     // Generate complete HTML document
     const htmlContent = generateHtmlDocument(componentHtml, formData);
     
-    // Launch Puppeteer
-    const browser = await puppeteer.launch({
+    // Launch Puppeteer with optimized serverless configuration
+    const chromeExecutablePath = getChromeExecutablePath();
+    
+    browser = await puppeteer.launch({
       headless: true,
-      args: ['--no-sandbox', '--disable-setuid-sandbox']
+      ...(chromeExecutablePath && { executablePath: chromeExecutablePath }),
+      // Optimized args for serverless environments (Vercel)
+      args: [
+        '--no-sandbox',
+        '--disable-setuid-sandbox',
+        '--disable-dev-shm-usage',
+        '--disable-accelerated-2d-canvas',
+        '--no-first-run',
+        '--no-zygote',
+        '--single-process', // Important for serverless
+        '--disable-gpu',
+        '--disable-background-timer-throttling',
+        '--disable-backgrounding-occluded-windows',
+        '--disable-renderer-backgrounding'
+      ],
+      // Timeout configuration for serverless
+      timeout: 30000,
     });
     
     const page = await browser.newPage();
@@ -38,9 +75,10 @@ export async function POST(request: NextRequest) {
       deviceScaleFactor: 2
     });
     
-    // Set content and wait for images to load
+    // Set content and wait for images to load with timeout
     await page.setContent(htmlContent, {
-      waitUntil: 'networkidle0'
+      waitUntil: 'networkidle0',
+      timeout: 30000
     });
     
     // Get actual content height for truly continuous PDF
@@ -66,6 +104,7 @@ export async function POST(request: NextRequest) {
     });
     
     await browser.close();
+    browser = null;
     
     // Sanitize filename to remove Unicode characters that break headers
     const sanitizeFilename = (filename: string): string => {
@@ -89,29 +128,41 @@ export async function POST(request: NextRequest) {
     
   } catch (error) {
     console.error('PDF generation error:', error);
+    
+    // Ensure browser is closed on error
+    if (browser) {
+      try {
+        await browser.close();
+      } catch (closeError) {
+        console.error('Error closing browser:', closeError);
+      }
+    }
+    
     return NextResponse.json(
-      { error: 'Failed to generate PDF' },
+      { 
+        error: 'Failed to generate PDF',
+        details: process.env.NODE_ENV === 'development' ? (error instanceof Error ? error.message : 'Unknown error') : undefined
+      },
       { status: 500 }
     );
   }
 }
 
-// REAL image loading - EXACT same logic as PdfPreview component
-async function loadPreviewImages(data: ItineraryFormData) {
-  // Function to get or generate image for preview - EXACT COPY from PdfPreview
+// DIRECT image loading - NO self-referential API calls
+async function loadPreviewImagesDirect(data: ItineraryFormData) {
+  // Function to get or generate image for preview - DIRECT function calls
   const getPreviewImage = async (keywords: string, type: 'main' | 'hotel' | 'experience' | 'day' | 'city', index: number = 0): Promise<string> => {
     try {
-      // Make actual API call to /api/images (same as PdfPreview)
-      const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/images?q=${encodeURIComponent(keywords)}&type=single`);
-      const imageData = await response.json();
-      if (imageData.imageUrl) {
-        return imageData.imageUrl;
+      // Call the function directly instead of making HTTP requests
+      const imageUrl = await getImageUrl(keywords);
+      if (imageUrl) {
+        return imageUrl;
       }
     } catch (error) {
       console.log('Failed to fetch image, using fallback');
     }
     
-    // Fallback to high-quality placeholder - EXACT COPY from PdfPreview
+    // Fallback to high-quality placeholder
     const baseRandoms = {
       main: 1000,
       hotel: 2000,
@@ -130,53 +181,73 @@ async function loadPreviewImages(data: ItineraryFormData) {
     cities: [] as string[]
   };
 
-  // Main image - prioritize form data - EXACT COPY from PdfPreview
+  // Main image - prioritize form data
   if (data.mainImage) {
     newImages.main = data.mainImage;
   } else if (data.destination) {
     newImages.main = await getPreviewImage(`${data.destination} landscape destination`, 'main');
   }
 
-  // Hotel images - EXACT COPY from PdfPreview
-  const hotelPromises = data.hotels.map(async (hotel, index) => {
-    if (hotel.image) {
-      return hotel.image;
-    }
-    const keywords = `${hotel.name} ${data.destination || 'luxury'} hotel accommodation`;
-    return await getPreviewImage(keywords, 'hotel', index);
-  });
-  newImages.hotels = await Promise.all(hotelPromises);
-
-  // Experience images - EXACT COPY from PdfPreview
-  const experiencePromises = data.experiences.map(async (experience, index) => {
-    if (experience.image) {
-      return experience.image;
-    }
-    const keywords = `${experience.name} ${data.destination || 'travel'} activity experience`;
-    return await getPreviewImage(keywords, 'experience', index);
-  });
-  newImages.experiences = await Promise.all(experiencePromises);
-
-  // Day images - EXACT COPY from PdfPreview
-  const dayPromises = data.dayWiseItinerary.map(async (day, index) => {
-    if (day.image) {
-      return day.image;
-    }
-    const keywords = `${day.title} ${data.destination || 'travel'} tour activity`;
-    return await getPreviewImage(keywords, 'day', index);
-  });
-  newImages.days = await Promise.all(dayPromises);
-
-  // City images - EXACT COPY from PdfPreview
-  if (data.cityImages && data.cityImages.length > 0) {
-    const cityPromises = data.cityImages.map(async (cityImage, index) => {
-      if (cityImage.image) {
-        return cityImage.image;
+  // Hotel images with parallel processing and error handling
+  try {
+    const hotelPromises = data.hotels.map(async (hotel, index) => {
+      if (hotel.image) {
+        return hotel.image;
       }
-      const keywords = `${cityImage.city} ${data.destination || 'city'} landmark skyline`;
-      return await getPreviewImage(keywords, 'city', index);
+      const keywords = `${hotel.name} ${data.destination || 'luxury'} hotel accommodation`;
+      return await getPreviewImage(keywords, 'hotel', index);
     });
-    newImages.cities = await Promise.all(cityPromises);
+    newImages.hotels = await Promise.all(hotelPromises);
+  } catch (error) {
+    console.error('Error loading hotel images:', error);
+    newImages.hotels = data.hotels.map((_, index) => `https://picsum.photos/600/400?random=${2000 + index}`);
+  }
+
+  // Experience images with parallel processing and error handling
+  try {
+    const experiencePromises = data.experiences.map(async (experience, index) => {
+      if (experience.image) {
+        return experience.image;
+      }
+      const keywords = `${experience.name} ${data.destination || 'travel'} activity experience`;
+      return await getPreviewImage(keywords, 'experience', index);
+    });
+    newImages.experiences = await Promise.all(experiencePromises);
+  } catch (error) {
+    console.error('Error loading experience images:', error);
+    newImages.experiences = data.experiences.map((_, index) => `https://picsum.photos/600/400?random=${3000 + index}`);
+  }
+
+  // Day images with parallel processing and error handling
+  try {
+    const dayPromises = data.dayWiseItinerary.map(async (day, index) => {
+      if (day.image) {
+        return day.image;
+      }
+      const keywords = `${day.title} ${data.destination || 'travel'} tour activity`;
+      return await getPreviewImage(keywords, 'day', index);
+    });
+    newImages.days = await Promise.all(dayPromises);
+  } catch (error) {
+    console.error('Error loading day images:', error);
+    newImages.days = data.dayWiseItinerary.map((_, index) => `https://picsum.photos/600/400?random=${4000 + index}`);
+  }
+
+  // City images with parallel processing and error handling
+  if (data.cityImages && data.cityImages.length > 0) {
+    try {
+      const cityPromises = data.cityImages.map(async (cityImage, index) => {
+        if (cityImage.image) {
+          return cityImage.image;
+        }
+        const keywords = `${cityImage.city} ${data.destination || 'city'} landmark skyline`;
+        return await getPreviewImage(keywords, 'city', index);
+      });
+      newImages.cities = await Promise.all(cityPromises);
+    } catch (error) {
+      console.error('Error loading city images:', error);
+      newImages.cities = data.cityImages.map((_, index) => `https://picsum.photos/600/400?random=${5000 + index}`);
+    }
   }
 
   return newImages;
@@ -258,6 +329,12 @@ function generateHtmlDocument(componentHtml: string, data: ItineraryFormData): s
         body, html {
           height: auto !important;
           min-height: auto !important;
+        }
+        
+        /* Image loading optimization */
+        img {
+          max-width: 100%;
+          height: auto;
         }
       </style>
     </head>
