@@ -119,42 +119,31 @@ export async function POST(request: NextRequest) {
     // Fast viewport setup
     await page.setViewport({ width: 420, height: 800, deviceScaleFactor: 1 });
     
-    // Fast content loading without expensive wait conditions
-    console.log('Setting HTML content for fast PDF generation...');
+    // Set HTML content
     await page.setContent(htmlContent, { 
-      waitUntil: 'load',  // Faster than domcontentloaded
-      timeout: 10000      // Reduced timeout
+      waitUntil: 'load',
+      timeout: 10000
     });
-    
-    // Calculate estimated content height based on form data (faster than DOM evaluation)
-    console.log('Calculating optimal PDF height...');
-    const estimatedHeight = (() => {
-      let height = 400; // Base height for header/cover
-      
-      // Add height estimates based on content
-      if (safeFormData.hotels.length > 0) height += safeFormData.hotels.length * 180;
-      if (safeFormData.experiences.length > 0) height += safeFormData.experiences.length * 180;
-      if (safeFormData.dayWiseItinerary.length > 0) height += safeFormData.dayWiseItinerary.length * 250;
-      if (safeFormData.practicalInfo.tips.length > 0) height += safeFormData.practicalInfo.tips.length * 40;
-      if (safeFormData.cityImages && safeFormData.cityImages.length > 0) height += safeFormData.cityImages.length * 150;
-      
-      // Add base sections (overview, practical info, etc.)
-      height += 600;
-      
-      // Ensure reasonable bounds
-      return Math.min(Math.max(height, 800), 6000); // Between 800px and 6000px
-    })();
-    
-    console.log(`Estimated content height: ${estimatedHeight}px`);
-    
-    // Generate PDF with optimal height
-    console.log('Generating PDF with optimal dimensions...');
+
+    // Measure actual rendered body height
+    const pdfHeight = await (page as any).evaluate(() => {
+      return Math.max(
+        document.body.scrollHeight,
+        document.body.offsetHeight,
+        document.documentElement.clientHeight,
+        document.documentElement.scrollHeight,
+        document.documentElement.offsetHeight
+      );
+    });
+    console.log(`Measured actual content height: ${pdfHeight}px`);
+
+    // Generate PDF with true content height
     const pdf = await page.pdf({
       printBackground: true,
       preferCSSPageSize: false,
       margin: { top: '0px', bottom: '0px', left: '0px', right: '0px' },
       width: '420px',
-      height: `${estimatedHeight}px`,  // Smart estimated height based on content
+      height: `${pdfHeight}px`,
       pageRanges: '1',
       timeout: 10000
     });
