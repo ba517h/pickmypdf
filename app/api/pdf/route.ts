@@ -207,8 +207,9 @@ async function loadPreviewImagesDirect(data: ItineraryFormData) {
   }
 
   // Hotel images with parallel processing and error handling
+  const safeHotels = data.hotels || [];
   try {
-    const hotelPromises = data.hotels.map(async (hotel, index) => {
+    const hotelPromises = safeHotels.map(async (hotel, index) => {
       if (hotel.image) {
         return hotel.image;
       }
@@ -218,12 +219,13 @@ async function loadPreviewImagesDirect(data: ItineraryFormData) {
     newImages.hotels = await Promise.all(hotelPromises);
   } catch (error) {
     console.error('Error loading hotel images:', error);
-    newImages.hotels = data.hotels.map((_, index) => `https://picsum.photos/600/400?random=${2000 + index}`);
+    newImages.hotels = safeHotels.map((_, index) => `https://picsum.photos/600/400?random=${2000 + index}`);
   }
 
   // Experience images with parallel processing and error handling
+  const safeExperiences = data.experiences || [];
   try {
-    const experiencePromises = data.experiences.map(async (experience, index) => {
+    const experiencePromises = safeExperiences.map(async (experience, index) => {
       if (experience.image) {
         return experience.image;
       }
@@ -233,12 +235,13 @@ async function loadPreviewImagesDirect(data: ItineraryFormData) {
     newImages.experiences = await Promise.all(experiencePromises);
   } catch (error) {
     console.error('Error loading experience images:', error);
-    newImages.experiences = data.experiences.map((_, index) => `https://picsum.photos/600/400?random=${3000 + index}`);
+    newImages.experiences = safeExperiences.map((_, index) => `https://picsum.photos/600/400?random=${3000 + index}`);
   }
 
   // Day images with parallel processing and error handling
+  const safeDayWiseItinerary = data.dayWiseItinerary || [];
   try {
-    const dayPromises = data.dayWiseItinerary.map(async (day, index) => {
+    const dayPromises = safeDayWiseItinerary.map(async (day, index) => {
       if (day.image) {
         return day.image;
       }
@@ -248,13 +251,14 @@ async function loadPreviewImagesDirect(data: ItineraryFormData) {
     newImages.days = await Promise.all(dayPromises);
   } catch (error) {
     console.error('Error loading day images:', error);
-    newImages.days = data.dayWiseItinerary.map((_, index) => `https://picsum.photos/600/400?random=${4000 + index}`);
+    newImages.days = safeDayWiseItinerary.map((_, index) => `https://picsum.photos/600/400?random=${4000 + index}`);
   }
 
   // City images with parallel processing and error handling
-  if (data.cityImages && data.cityImages.length > 0) {
+  const safeCityImages = data.cityImages || [];
+  if (safeCityImages.length > 0) {
     try {
-      const cityPromises = data.cityImages.map(async (cityImage, index) => {
+      const cityPromises = safeCityImages.map(async (cityImage, index) => {
         if (cityImage.image) {
           return cityImage.image;
         }
@@ -264,7 +268,7 @@ async function loadPreviewImagesDirect(data: ItineraryFormData) {
       newImages.cities = await Promise.all(cityPromises);
     } catch (error) {
       console.error('Error loading city images:', error);
-      newImages.cities = data.cityImages.map((_, index) => `https://picsum.photos/600/400?random=${5000 + index}`);
+      newImages.cities = safeCityImages.map((_, index) => `https://picsum.photos/600/400?random=${5000 + index}`);
     }
   }
 
