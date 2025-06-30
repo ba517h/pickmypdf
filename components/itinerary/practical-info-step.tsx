@@ -73,32 +73,28 @@ export function PracticalInfoStep({ data, onUpdate, form }: PracticalInfoStepPro
 
       {/* Visa Information */}
       <div className="space-y-2">
-        <Label htmlFor="visa">Visa Requirements</Label>
+        <Label htmlFor="visa" className="font-semibold text-muted-foreground">Visa Requirements</Label>
         <Textarea
           id="visa"
           placeholder="e.g., Tourist visa required for stays over 30 days. Visa on arrival available for most countries."
           value={data.practicalInfo?.visa || ""}
           onChange={(e) => handleInputChange("visa", e.target.value)}
           rows={3}
+          className="font-medium"
         />
-        <p className="text-sm text-muted-foreground">
-          Describe visa requirements and entry regulations
-        </p>
       </div>
 
       {/* Currency Information */}
       <div className="space-y-2">
-        <Label htmlFor="currency">Currency & Money</Label>
+        <Label htmlFor="currency" className="font-semibold text-muted-foreground">Currency & Money</Label>
         <Textarea
           id="currency"
           placeholder="e.g., Thai Baht (THB). Credit cards widely accepted. ATMs available in major cities."
           value={data.practicalInfo?.currency || ""}
           onChange={(e) => handleInputChange("currency", e.target.value)}
           rows={3}
+          className="font-medium"
         />
-        <p className="text-sm text-muted-foreground">
-          Currency, exchange rates, and payment methods
-        </p>
       </div>
 
       {/* Travel Tips */}
@@ -113,6 +109,7 @@ export function PracticalInfoStep({ data, onUpdate, form }: PracticalInfoStepPro
               value={newTip}
               onChange={(e) => setNewTip(e.target.value)}
               onKeyPress={handleKeyPress}
+              className="font-medium"
             />
             <Button
               type="button"
@@ -142,9 +139,6 @@ export function PracticalInfoStep({ data, onUpdate, form }: PracticalInfoStepPro
               ))}
             </div>
           )}
-          <p className="text-sm text-muted-foreground">
-            Add helpful tips for travelers (e.g., customs, etiquette, weather)
-          </p>
         </CardContent>
       </Card>
 

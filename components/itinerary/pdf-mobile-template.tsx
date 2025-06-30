@@ -90,9 +90,9 @@ const CompassIcon = () => (
 
 export function PdfMobileTemplate({ data, previewImages }: PdfMobileTemplateProps) {
   return (
-    <div className="h-fit overflow-hidden shadow-lg font-manrope w-[420px]">
+    <div className="h-fit overflow-hidden shadow-lg font-manrope w-full">
       {/* Header Section with Background Image - Cover Page - EXACT COPY */}
-      <div className="relative pt-12 pb-12 px-6 text-white overflow-hidden flex flex-col justify-between min-h-[320px]">
+      <div className="relative pt-12 pb-12 px-0 text-white overflow-hidden flex flex-col justify-between min-h-[320px]">
         {/* Background Image */}
         {(data.mainImage || previewImages.main || data.destination) && (
           <>
@@ -115,7 +115,7 @@ export function PdfMobileTemplate({ data, previewImages }: PdfMobileTemplateProp
         )}
         
         {/* Content - positioned above background */}
-        <div className="relative z-10 flex flex-col justify-between h-full">
+        <div className="relative z-10 flex flex-col justify-between h-full px-6">
           {/* Center Section - Logo and Main Title */}
           <div className="text-center py-12">
             {/* PickMyPDF Logo */}

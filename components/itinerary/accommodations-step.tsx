@@ -73,7 +73,7 @@ export function AccommodationsStep({ data, onUpdate, form }: AccommodationsStepP
               value={newHotel}
               onChange={(e) => setNewHotel(e.target.value)}
               onKeyPress={handleKeyPress}
-              className="flex-1"
+              className="flex-1 font-medium"
             />
             <Button onClick={addHotel} disabled={!newHotel.trim()} size="sm">
               <Plus className="w-4 h-4 mr-1" />
@@ -95,7 +95,7 @@ export function AccommodationsStep({ data, onUpdate, form }: AccommodationsStepP
                   <div className="flex gap-4 items-start">
                     {/* Image Section */}
                     <div className="w-28 flex-shrink-0">
-                      <Label className="text-xs font-medium text-gray-600 mb-2 block">Image</Label>
+                      <Label className="text-xs font-semibold text-muted-foreground mb-2 block">Image</Label>
                       <ImageInput
                         value={hotel.image}
                         onChange={(imageUrl) => updateHotelImage(hotel.name, imageUrl)}

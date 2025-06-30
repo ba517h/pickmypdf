@@ -81,84 +81,74 @@ export function CoverPageStep({ data, onUpdate, form }: CoverPageStepProps) {
 
       {/* Title */}
       <div className="space-y-2">
-        <Label htmlFor="title">Trip Title *</Label>
+        <Label htmlFor="title" className="font-semibold text-muted-foreground">Trip Title *</Label>
         <Input
           id="title"
           placeholder="e.g., Amazing Southeast Asia Adventure"
           value={data.title}
           onChange={(e) => handleInputChange("title", e.target.value)}
+          className="font-medium"
         />
-        <p className="text-sm text-muted-foreground">
-          Give your itinerary a compelling title
-        </p>
       </div>
 
       {/* Destination */}
       <div className="space-y-2">
-        <Label htmlFor="destination">Destination *</Label>
+        <Label htmlFor="destination" className="font-semibold text-muted-foreground">Destination *</Label>
         <Input
           id="destination"
           placeholder="e.g., Thailand, Vietnam, Cambodia"
           value={data.destination}
           onChange={(e) => handleInputChange("destination", e.target.value)}
+          className="font-medium"
         />
-        <p className="text-sm text-muted-foreground">
-          Countries, cities, or regions you&apos;ll be visiting
-        </p>
       </div>
 
       {/* Duration */}
       <div className="space-y-2">
-        <Label htmlFor="duration">Duration *</Label>
+        <Label htmlFor="duration" className="font-semibold text-muted-foreground">Duration *</Label>
         <Input
           id="duration"
           placeholder="e.g., 14 days, 2 weeks, 10 days 9 nights"
           value={data.duration}
           onChange={(e) => handleInputChange("duration", e.target.value)}
+          className="font-medium"
         />
-        <p className="text-sm text-muted-foreground">
-          How long is your trip?
-        </p>
       </div>
 
       {/* Cost in INR */}
       <div className="space-y-2">
-        <Label htmlFor="costInINR">Estimated Cost (₹)</Label>
+        <Label htmlFor="costInINR" className="font-semibold text-muted-foreground">Estimated Cost (₹)</Label>
         <Input
           id="costInINR"
           placeholder="e.g., 1,42,000 / person"
           value={data.costInINR || "1,42,000 / person"}
           onChange={(e) => onUpdate({ costInINR: e.target.value })}
+          className="font-medium"
         />
-        <p className="text-sm text-muted-foreground">
-          Optional: Total cost or cost per person in Indian Rupees
-        </p>
       </div>
 
       {/* Tags */}
       <div className="space-y-4">
-        <Label>Tags</Label>
+        <Label className="font-semibold text-muted-foreground">Tags</Label>
         
         {/* Tag Pills - Selected first, then recommendations, then custom */}
         <div className="flex flex-wrap gap-2">
           {/* Selected tags first - with checkmark */}
           {data.tags.map((tag) => (
-            <Button
-              key={tag}
-              type="button"
-              variant="secondary"
-              size="sm"
-              className="text-xs h-7 bg-blue-100 text-blue-800 hover:bg-blue-200"
-            >
-              ✓ {tag}
-              <button
+            <div key={tag} className="flex items-center gap-1">
+              <Badge variant="secondary" className="text-xs bg-blue-100 text-blue-800">
+                ✓ {tag}
+              </Badge>
+              <Button
                 type="button"
+                variant="ghost"
+                size="sm"
                 onClick={() => removeTag(tag)}
-                className="ml-1 hover:text-destructive"
+                className="h-6 w-6 p-0 hover:text-destructive"
               >
                 <X className="w-3 h-3" />
-              </button>
-            </Button>
+              </Button>
+            </div>
           ))}
           
           {/* Unselected recommended tags */}
@@ -198,6 +188,7 @@ export function CoverPageStep({ data, onUpdate, form }: CoverPageStepProps) {
               onChange={(e) => setNewTag(e.target.value)}
               onKeyPress={handleKeyPress}
               autoFocus
+              className="font-medium"
             />
             <Button
               type="button"

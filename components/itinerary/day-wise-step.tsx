@@ -154,17 +154,18 @@ export function DayWiseStep({ data, onUpdate }: DayWiseStepProps) {
                   {/* Content Section */}
                   <div className="space-y-4">
                     <div className="space-y-2">
-                      <Label htmlFor={`day-${dayItem.day}-title`}>Day Title</Label>
+                      <Label htmlFor={`day-${dayItem.day}-title`} className="font-semibold text-muted-foreground">Day Title</Label>
                       <Input
                         id={`day-${dayItem.day}-title`}
                         placeholder={`e.g., Exploring Bangkok's Temples`}
                         value={dayItem.title}
                         onChange={(e) => updateDay(dayItem.day, "title", e.target.value)}
+                        className="font-medium"
                       />
                     </div>
                     
                     <div className="space-y-2">
-                      <Label htmlFor={`day-${dayItem.day}-content`}>Activities & Details</Label>
+                      <Label htmlFor={`day-${dayItem.day}-content`} className="font-semibold text-muted-foreground">Activities & Details</Label>
                       <Textarea
                         id={`day-${dayItem.day}-content`}
                         placeholder={`Describe the day's activities, timing, locations, and any special notes...
@@ -176,6 +177,7 @@ Evening: Dinner cruise on Chao Phraya River (7:00 PM)`}
                         value={dayItem.content}
                         onChange={(e) => updateDay(dayItem.day, "content", e.target.value)}
                         rows={8}
+                        className="font-medium"
                       />
                     </div>
                   </div>

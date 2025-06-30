@@ -41,7 +41,7 @@ export function OptionalBlocksStep({ data, onUpdate }: OptionalBlocksStepProps) 
         </CardHeader>
         <CardContent>
           <div className="space-y-2">
-            <Label htmlFor="withKids">Kid-Friendly Recommendations</Label>
+            <Label htmlFor="withKids" className="font-semibold text-muted-foreground">Kid-Friendly Recommendations</Label>
             <Textarea
               id="withKids"
               placeholder="Share tips and recommendations for families traveling with children...
@@ -57,10 +57,8 @@ Examples:
               value={data.withKids}
               onChange={(e) => handleInputChange("withKids", e.target.value)}
               rows={8}
+              className="font-medium"
             />
-            <p className="text-sm text-muted-foreground">
-              Include family-friendly activities, safety tips, and practical advice for parents
-            </p>
           </div>
         </CardContent>
       </Card>
@@ -77,7 +75,7 @@ Examples:
         </CardHeader>
         <CardContent>
           <div className="space-y-2">
-            <Label htmlFor="withFamily">Multi-Generational Travel</Label>
+            <Label htmlFor="withFamily" className="font-semibold text-muted-foreground">Multi-Generational Travel</Label>
             <Textarea
               id="withFamily"
               placeholder="Recommendations for traveling with extended family or multiple generations...
@@ -93,10 +91,8 @@ Examples:
               value={data.withFamily}
               onChange={(e) => handleInputChange("withFamily", e.target.value)}
               rows={8}
+              className="font-medium"
             />
-            <p className="text-sm text-muted-foreground">
-              Consider different ages, interests, and mobility needs within the family
-            </p>
           </div>
         </CardContent>
       </Card>
@@ -113,7 +109,7 @@ Examples:
         </CardHeader>
         <CardContent>
           <div className="space-y-2">
-            <Label htmlFor="offbeatSuggestions">Hidden Gems & Unique Experiences</Label>
+            <Label htmlFor="offbeatSuggestions" className="font-semibold text-muted-foreground">Hidden Gems & Unique Experiences</Label>
             <Textarea
               id="offbeatSuggestions"
               placeholder="Share lesser-known attractions, local secrets, and unique experiences...
@@ -130,10 +126,8 @@ Examples:
               value={data.offbeatSuggestions}
               onChange={(e) => handleInputChange("offbeatSuggestions", e.target.value)}
               rows={8}
+              className="font-medium"
             />
-            <p className="text-sm text-muted-foreground">
-              Include unconventional experiences that adventurous travelers might enjoy
-            </p>
           </div>
         </CardContent>
       </Card>

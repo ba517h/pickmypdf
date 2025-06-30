@@ -129,9 +129,9 @@ export function PdfPreview({ data }: PdfPreviewProps) {
   }, [data]);
 
   return (
-    <Card className="h-fit overflow-hidden shadow-lg font-manrope w-[420px] mx-auto">
+    <Card className="h-fit overflow-hidden border-0 shadow-none font-manrope w-full">
       {/* Header Section with Background Image - Cover Page */}
-      <div className="relative pt-12 pb-12 px-6 text-white overflow-hidden flex flex-col justify-between min-h-[320px]">
+      <div id="pdf-cover" className="relative pt-12 pb-12 px-0 text-white overflow-hidden flex flex-col justify-between min-h-[320px] scroll-mt-4">
         {/* Background Image */}
         {(data.mainImage || previewImages.main || data.destination) && (
           <>
@@ -158,7 +158,7 @@ export function PdfPreview({ data }: PdfPreviewProps) {
         )}
         
         {/* Content - positioned above background */}
-        <div className="relative z-10 flex flex-col justify-between h-full">
+        <div className="relative z-10 flex flex-col justify-between h-full px-6">
           {/* Center Section - Logo and Main Title */}
           <div className="text-center py-12">
             {/* PickMyPDF Logo */}
@@ -215,7 +215,7 @@ export function PdfPreview({ data }: PdfPreviewProps) {
       <CardContent className="p-0">
         <div className="p-6 space-y-8">
           {/* Overview Section */}
-          <div className="space-y-4">
+          <div id="pdf-overview" className="space-y-4 scroll-mt-4">
             <h3 className="font-bold text-lg text-gray-800 flex items-center gap-3 pb-2 border-b border-gray-200">
               <div className="w-1 h-6 bg-blue-600 rounded" />
               Overview
@@ -252,7 +252,7 @@ export function PdfPreview({ data }: PdfPreviewProps) {
 
           {/* Hotels Section */}
           {data.hotels.length > 0 && (
-            <div className="space-y-4">
+            <div id="pdf-accommodations" className="space-y-4 scroll-mt-4">
               <h3 className="font-bold text-lg text-gray-800 flex items-center gap-3 pb-2 border-b border-gray-200">
                 <div className="w-1 h-6 bg-green-600 rounded" />
                 Accommodations
@@ -286,7 +286,7 @@ export function PdfPreview({ data }: PdfPreviewProps) {
 
           {/* Experiences Section */}
           {data.experiences.length > 0 && (
-            <div className="space-y-4">
+            <div id="pdf-experiences" className="space-y-4 scroll-mt-4">
               <h3 className="font-bold text-lg text-gray-800 flex items-center gap-3 pb-2 border-b border-gray-200">
                 <div className="w-1 h-6 bg-orange-600 rounded" />
                 Experiences & Activities
@@ -328,7 +328,7 @@ export function PdfPreview({ data }: PdfPreviewProps) {
 
           {/* Day-wise Itinerary */}
           {data.dayWiseItinerary.length > 0 && (
-            <div className="space-y-4">
+            <div id="pdf-daywise" className="space-y-4 scroll-mt-4">
               <h3 className="font-bold text-lg text-gray-800 flex items-center gap-3 pb-2 border-b border-gray-200">
                 <div className="w-1 h-6 bg-purple-600 rounded" />
                 Daily Itinerary
@@ -379,7 +379,7 @@ export function PdfPreview({ data }: PdfPreviewProps) {
 
           {/* Destination Gallery */}
           {((data.destinationGallery && data.destinationGallery.length > 0) || data.destination) && (
-            <div className="space-y-4">
+            <div id="pdf-gallery" className="space-y-4 scroll-mt-4">
               <h3 className="font-bold text-lg text-gray-800 flex items-center gap-3 pb-2 border-b border-gray-200">
                 <div className="w-1 h-6 bg-teal-600 rounded" />
                 Destination Gallery
@@ -440,7 +440,7 @@ export function PdfPreview({ data }: PdfPreviewProps) {
 
           {/* Practical Information */}
           {(data.practicalInfo.visa || data.practicalInfo.currency || data.practicalInfo.tips.length > 0) && (
-            <div className="space-y-4">
+            <div id="pdf-practical" className="space-y-4 scroll-mt-4">
               <h3 className="font-bold text-lg text-gray-800 flex items-center gap-3 pb-2 border-b border-gray-200">
                 <div className="w-1 h-6 bg-blue-600 rounded" />
                 Practical Information
@@ -474,7 +474,7 @@ export function PdfPreview({ data }: PdfPreviewProps) {
 
           {/* Optional Sections */}
           {(data.withKids || data.withFamily || data.offbeatSuggestions) && (
-            <div className="space-y-4">
+            <div id="pdf-optional" className="space-y-4 scroll-mt-4">
               <h3 className="font-bold text-lg text-gray-800 flex items-center gap-3 pb-2 border-b border-gray-200">
                 <div className="w-1 h-6 bg-indigo-600 rounded" />
                 Special Recommendations

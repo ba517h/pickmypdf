@@ -79,27 +79,25 @@ export function TripOverviewStep({ data, onUpdate, form }: TripOverviewStepProps
 
       {/* Routing */}
       <div className="space-y-2">
-        <Label htmlFor="routing">Routing</Label>
+        <Label htmlFor="routing" className="font-semibold text-muted-foreground">Routing</Label>
         <Textarea
           id="routing"
           placeholder="e.g., Bangkok → Chiang Mai → Hanoi → Ho Chi Minh City → Siem Reap → Bangkok"
           value={data.routing}
           onChange={(e) => handleInputChange("routing", e.target.value)}
           rows={3}
+          className="font-medium"
         />
-        <p className="text-sm text-muted-foreground">
-          Describe your travel route and major stops
-        </p>
       </div>
 
       {/* Trip Type */}
       <div className="space-y-2">
-        <Label>Trip Type</Label>
+        <Label className="font-semibold text-muted-foreground">Trip Type</Label>
         <Select
           value={data.tripType}
           onValueChange={(value) => handleInputChange("tripType", value)}
         >
-          <SelectTrigger>
+          <SelectTrigger className="font-medium">
             <SelectValue placeholder="Select trip type" />
           </SelectTrigger>
           <SelectContent>
@@ -110,9 +108,6 @@ export function TripOverviewStep({ data, onUpdate, form }: TripOverviewStepProps
             ))}
           </SelectContent>
         </Select>
-        <p className="text-sm text-muted-foreground">
-          What kind of trip is this?
-        </p>
       </div>
 
       {/* City Images */}
@@ -127,6 +122,7 @@ export function TripOverviewStep({ data, onUpdate, form }: TripOverviewStepProps
               value={newCity}
               onChange={(e) => setNewCity(e.target.value)}
               onKeyPress={handleKeyPress}
+              className="font-medium"
             />
             <Button
               type="button"
