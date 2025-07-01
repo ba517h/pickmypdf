@@ -275,20 +275,21 @@ export function PdfMobileTemplate({ data, previewImages }: PdfMobileTemplateProp
                 <div className="w-1 h-6 bg-green-600 rounded" />
                 Accommodations
               </h3>
-              <div className="space-y-4">
+              
+              <div className="space-y-4 pl-4">
                 {safeData.hotels.map((hotel, index) => (
                   <div key={index} className="bg-white rounded-xl border border-gray-200 overflow-hidden">
                     {/* Hotel Image */}
-                    <div className="relative w-full h-48 mb-4 overflow-hidden rounded-lg">
+                    <div className="h-48 bg-gray-200 overflow-hidden">
                       <StaticImage 
                         src={hotel.image || previewImages.hotels[index] || `https://picsum.photos/800/600?random=${index + 1}`}
                         alt={hotel.name}
-                        className="w-full h-full"
+                        className="w-full h-full object-cover"
                       />
                     </div>
                     
                     {/* Hotel Details */}
-                    <div className="p-4 space-y-2">
+                    <div className="p-4 space-y-3">
                       {/* Nights and City info */}
                       {(hotel.nights || hotel.city) && (
                         <div className="text-xs font-bold text-purple-600 uppercase tracking-wide">

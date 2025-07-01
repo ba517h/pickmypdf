@@ -249,10 +249,11 @@ export function PdfPreview({ data, onImagesLoaded }: PdfPreviewProps) {
                 <div className="w-1 h-6 bg-green-600 rounded" />
                 Accommodations
               </h3>
-              <div className="space-y-4">
+             
+              <div className="space-y-4 pl-4">
                 {data.hotels.map((hotel, index) => (
                   <div key={index} className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-                    {/* Hotel Image - Full Width */}
+                    {/* Hotel Image */}
                     <div className="h-48 bg-gray-200 overflow-hidden">
                       <LazyImage 
                         src={hotel.image || previewImages.hotels[index] || `https://picsum.photos/400/300?random=${2000 + index}`}
@@ -263,7 +264,7 @@ export function PdfPreview({ data, onImagesLoaded }: PdfPreviewProps) {
                     </div>
                     
                     {/* Hotel Details */}
-                    <div className="p-4 space-y-2">
+                    <div className="p-4 space-y-3">
                       {/* Nights and City info */}
                       {(hotel.nights || hotel.city) && (
                         <div className="text-xs font-bold text-purple-600 uppercase tracking-wide">
