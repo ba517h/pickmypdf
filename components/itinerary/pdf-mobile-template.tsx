@@ -89,10 +89,56 @@ const CompassIcon = () => (
 );
 
 function getProxiedImageUrl(url: string) {
-  if (url && /^https?:\/\//i.test(url)) {
-    return `https://images.weserv.nl/?url=${encodeURIComponent(url)}&w=420&output=jpg&q=75`;
+  if (!url) return '';
+  if (url.startsWith('data:')) return url;
+  if (url.includes('images.weserv.nl')) return url;
+
+  // Handle both http and https URLs
+  if (/^https?:\/\//i.test(url)) {
+    return `https://images.weserv.nl/?url=${encodeURIComponent(url)}&w=800&h=600&fit=cover&output=jpg&q=75&n=${Date.now()}`;
   }
-  return url;
+  
+  // Handle relative URLs or other formats
+  return `https://picsum.photos/800/600?random=${Date.now()}`;
+}
+
+// Server-compatible image component
+function StaticImage({ src, alt, className }: { src: string; alt: string; className: string }) {
+  const imageUrl = getProxiedImageUrl(src);
+  
+  return (
+    <img 
+      src={imageUrl}
+      alt={alt}
+      className={`${className} object-cover`}
+    />
+  );
+}
+
+// Helper function to format destination string
+function formatDestination(destination: string) {
+  if (!destination) return '';
+  const cities = destination.split(',').map(city => city.trim());
+  if (cities.length <= 2) return destination;
+  return `${cities[0]}, ${cities[1]} +${cities.length - 2} more`;
+}
+
+// Helper function to get rating badge style
+function getRatingBadgeStyle(rating?: number) {
+  if (!rating) return "bg-gray-100 text-gray-600";
+  if (rating >= 4.5) return "bg-green-100 text-green-800";
+  if (rating >= 4.0) return "bg-blue-100 text-blue-800";
+  if (rating >= 3.5) return "bg-yellow-100 text-yellow-800";
+  return "bg-orange-100 text-orange-800";
+}
+
+// Helper function to get rating label
+function getRatingLabel(rating?: number) {
+  if (!rating) return "Not rated";
+  if (rating >= 4.5) return "Excellent";
+  if (rating >= 4.0) return "Very Good";
+  if (rating >= 3.5) return "Good";
+  return "Fair";
 }
 
 export function PdfMobileTemplate({ data, previewImages }: PdfMobileTemplateProps) {
@@ -119,7 +165,7 @@ export function PdfMobileTemplate({ data, previewImages }: PdfMobileTemplateProp
         {(safeData.mainImage || previewImages.main || safeData.destination) && (
           <>
             <div className="absolute inset-0">
-              <img 
+              <StaticImage 
                 src={getProxiedImageUrl(safeData.mainImage || previewImages.main || `https://picsum.photos/800/400?random=1`)} 
                 alt="Header background" 
                 className="w-full h-full object-cover"
@@ -154,13 +200,13 @@ export function PdfMobileTemplate({ data, previewImages }: PdfMobileTemplateProp
             <div className="flex flex-wrap justify-center gap-6 text-base mb-6">
               {safeData.destination && (
                 <div className="flex items-center gap-1 drop-shadow-sm">
-                  <MapPin className="w-5 h-5" />
-                  <span className="font-medium">{safeData.destination}</span>
+                  <MapPinIcon />
+                  <span className="font-medium">{formatDestination(safeData.destination)}</span>
                 </div>
               )}
               {safeData.duration && (
                 <div className="flex items-center gap-1 drop-shadow-sm">
-                  <Calendar className="w-5 h-5" />
+                  <CalendarIcon />
                   <span className="font-medium">{safeData.duration}</span>
                 </div>
               )}
@@ -229,25 +275,71 @@ export function PdfMobileTemplate({ data, previewImages }: PdfMobileTemplateProp
                 <div className="w-1 h-6 bg-green-600 rounded" />
                 Accommodations
               </h3>
-              <div className="space-y-4 pl-4">
-                {safeData.hotels.slice(0, 3).map((hotel, index) => (
-                  <div key={index} className="bg-gray-50 rounded-xl p-4 border border-gray-200">
-                    <div className="h-24 bg-gray-200 rounded-lg mb-3 overflow-hidden">
-                      <img 
-                        src={getProxiedImageUrl(previewImages.hotels[index] || `https://picsum.photos/400/150?random=${2000 + index}`)}
+              <div className="space-y-4">
+                {safeData.hotels.map((hotel, index) => (
+                  <div key={index} className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+                    {/* Hotel Image */}
+                    <div className="relative w-full h-48 mb-4 overflow-hidden rounded-lg">
+                      <StaticImage 
+                        src={hotel.image || previewImages.hotels[index] || `https://picsum.photos/800/600?random=${index + 1}`}
                         alt={hotel.name}
-                        className="w-full h-full object-cover"
+                        className="w-full h-full"
                       />
                     </div>
-                    <div className="text-base font-medium text-gray-900">{hotel.name}</div>
-                    <div className="text-sm text-gray-600 mt-1">Premium accommodation</div>
+                    
+                    {/* Hotel Details */}
+                    <div className="p-4 space-y-2">
+                      {/* Nights and City info */}
+                      {(hotel.nights || hotel.city) && (
+                        <div className="text-xs font-bold text-purple-600 uppercase tracking-wide">
+                          {hotel.nights && `${hotel.nights} NIGHTS STAY`}
+                          {hotel.nights && hotel.city && " IN "}
+                          {hotel.city && `${hotel.city.toUpperCase()}`}
+                        </div>
+                      )}
+                      
+                      {/* Hotel Name */}
+                      <h4 className="text-lg font-semibold text-gray-900">{hotel.name}</h4>
+                      
+                      {/* Rating Display */}
+                      {hotel.rating && (
+                        <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-1">
+                            {[...Array(5)].map((_, i) => {
+                              const isFilled = i < Math.floor(hotel.rating!);
+                              const isHalf = i === Math.floor(hotel.rating!) && hotel.rating! % 1 >= 0.5;
+                              return (
+                                <Star 
+                                  key={i} 
+                                  className={`w-4 h-4 ${
+                                    isFilled || isHalf 
+                                      ? 'text-yellow-400 fill-current' 
+                                      : 'text-gray-300'
+                                  }`}
+                                />
+                              );
+                            })}
+                          </div>
+                          <span className="text-sm text-gray-600">{hotel.rating.toFixed(1)}</span>
+                          <Badge className={`ml-2 ${getRatingBadgeStyle(hotel.rating)}`}>
+                            {getRatingLabel(hotel.rating)}
+                          </Badge>
+                        </div>
+                      )}
+                      
+                      {/* Reviews Section */}
+                      <div className="space-y-1">
+                        <div className="text-sm font-semibold text-gray-600">Reviews</div>
+                        <div className="text-sm text-gray-600 leading-relaxed">
+                          {hotel.phrases && hotel.phrases.length > 0 
+                            ? hotel.phrases.join(', ')
+                            : 'Premium accommodation with excellent amenities'
+                          }
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 ))}
-                {safeData.hotels.length > 3 && (
-                  <div className="text-sm text-gray-500 pl-4 italic">
-                    + {safeData.hotels.length - 3} more accommodations included
-                  </div>
-                )}
               </div>
             </div>
           )}
@@ -263,11 +355,13 @@ export function PdfMobileTemplate({ data, previewImages }: PdfMobileTemplateProp
                 {safeData.experiences.slice(0, 4).map((experience, index) => (
                   <div key={index} className="flex items-start gap-4 bg-white border border-gray-200 rounded-lg p-4">
                     <div className="w-16 h-16 bg-gray-200 rounded-lg overflow-hidden flex-shrink-0">
-                      <img 
-                        src={getProxiedImageUrl(previewImages.experiences[index] || `https://picsum.photos/120/120?random=${3000 + index}`)}
-                        alt={experience.name}
-                        className="w-full h-full object-cover"
-                      />
+                      <div className="relative w-full h-48 mb-4 overflow-hidden rounded-lg">
+                        <StaticImage 
+                          src={experience.image || previewImages.experiences[index] || `https://picsum.photos/800/600?random=${index + 1}`}
+                          alt={experience.name}
+                          className="w-full h-full"
+                        />
+                      </div>
                     </div>
                     <div className="flex-1">
                       <div className="text-base font-medium text-gray-900 mb-1">{experience.name}</div>
@@ -314,11 +408,13 @@ export function PdfMobileTemplate({ data, previewImages }: PdfMobileTemplateProp
                         <div className="text-base font-medium text-gray-900 mb-2">Day {day.day}: {day.title}</div>
                         
                         <div className="h-32 bg-gray-200 rounded-lg mb-3 overflow-hidden">
-                          <img 
-                            src={getProxiedImageUrl(previewImages.days[index] || `https://picsum.photos/500/200?random=${4000 + index}`)}
-                            alt={`Day ${day.day}`}
-                            className="w-full h-full object-cover"
-                          />
+                          <div className="relative w-full h-48 mb-4 overflow-hidden rounded-lg">
+                            <StaticImage 
+                              src={day.image || previewImages.days[index] || `https://picsum.photos/800/600?random=${index + 1}`}
+                              alt={`Day ${day.day}`}
+                              className="w-full h-full"
+                            />
+                          </div>
                         </div>
                         
                         <div className="text-sm text-gray-700 leading-relaxed">

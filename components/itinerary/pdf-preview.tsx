@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { 
@@ -21,18 +21,111 @@ interface PdfPreviewProps {
   onImagesLoaded?: (images: PreviewImages) => void;
 }
 
+// Cache for proxied image URLs
+const proxiedImageCache = new Map<string, string>();
+
 function getProxiedImageUrl(url: string) {
-  if (url && /^https?:\/\//i.test(url)) {
-    return `https://images.weserv.nl/?url=${encodeURIComponent(url)}&w=420&output=jpg&q=75`;
+  if (!url) return '';
+  if (url.startsWith('data:')) return url;
+  if (url.includes('images.weserv.nl')) return url;
+
+  // Handle both http and https URLs
+  if (/^https?:\/\//i.test(url)) {
+    return `https://images.weserv.nl/?url=${encodeURIComponent(url)}&w=800&output=jpg&q=75&n=1`;
   }
-  return url;
+  
+  // Handle relative URLs or other formats
+  return `https://picsum.photos/800/600?random=${Date.now()}`;
+}
+
+// Lazy loading image component with error handling and placeholder
+function LazyImage({ src, alt, className, index = 0 }: { src: string; alt: string; className: string; index?: number }) {
+  const [error, setError] = useState(false);
+  const [loaded, setLoaded] = useState(false);
+  const [retryCount, setRetryCount] = useState(0);
+  const maxRetries = 3;
+  const [key, setKey] = useState(Date.now());
+
+  useEffect(() => {
+    // Reset states when src changes
+    setError(false);
+    setLoaded(false);
+    setRetryCount(0);
+    setKey(Date.now()); // Force reload image when src changes
+  }, [src]);
+
+  const handleError = () => {
+    if (retryCount < maxRetries) {
+      setTimeout(() => {
+        setRetryCount(prev => prev + 1);
+        setError(false);
+        setLoaded(false);
+        setKey(Date.now()); // Force reload on retry
+      }, Math.min(1000 * Math.pow(2, retryCount), 8000)); // Exponential backoff with 8s max
+    } else {
+      setError(true);
+      setLoaded(true);
+    }
+  };
+
+  const handleLoad = () => {
+    setLoaded(true);
+    setError(false);
+  };
+
+  const imageUrl = error ? `https://picsum.photos/800/600?random=${Date.now() + index}` : getProxiedImageUrl(src);
+
+  return (
+    <>
+      {!loaded && (
+        <div className={`${className} bg-gray-100 animate-pulse flex items-center justify-center`}>
+          <div className="text-gray-400 text-sm">Loading...</div>
+        </div>
+      )}
+      <img 
+        key={`${key}-${retryCount}`}
+        src={imageUrl}
+        alt={alt}
+        className={`${className} ${!loaded ? 'hidden' : ''} object-cover`}
+        onError={handleError}
+        onLoad={handleLoad}
+        loading="lazy"
+      />
+    </>
+  );
+}
+
+// Helper function to format destination string
+function formatDestination(destination: string) {
+  if (!destination) return '';
+  const cities = destination.split(',').map(city => city.trim());
+  if (cities.length <= 2) return destination;
+  return `${cities[0]}, ${cities[1]} +${cities.length - 2} more`;
+}
+
+// Helper function to get rating badge style
+function getRatingBadgeStyle(rating?: number) {
+  if (!rating) return "bg-gray-100 text-gray-600";
+  if (rating >= 4.5) return "bg-green-100 text-green-800";
+  if (rating >= 4.0) return "bg-blue-100 text-blue-800";
+  if (rating >= 3.5) return "bg-yellow-100 text-yellow-800";
+  return "bg-orange-100 text-orange-800";
+}
+
+// Helper function to get rating label
+function getRatingLabel(rating?: number) {
+  if (!rating) return "Not rated";
+  if (rating >= 4.5) return "Excellent";
+  if (rating >= 4.0) return "Very Good";
+  if (rating >= 3.5) return "Good";
+  return "Fair";
 }
 
 export function PdfPreview({ data, onImagesLoaded }: PdfPreviewProps) {
   const { previewImages } = usePreviewImages(data);
 
   // Notify parent when images are loaded
-  React.useEffect(() => {
+  useEffect(() => {
     if (onImagesLoaded && (previewImages.main || previewImages.hotels.length > 0)) {
       onImagesLoaded(previewImages);
     }
@@ -46,14 +139,10 @@ export function PdfPreview({ data, onImagesLoaded }: PdfPreviewProps) {
         {(data.mainImage || previewImages.main || data.destination) && (
           <>
             <div className="absolute inset-0">
-              <img 
-                src={getProxiedImageUrl(data.mainImage || previewImages.main || `https://picsum.photos/800/400?random=1`)} 
-                alt="Header background" 
+              <LazyImage 
+                src={data.mainImage || previewImages.main || `https://picsum.photos/800/400?random=1`}
+                alt="Header background"
                 className="w-full h-full object-cover"
-                onError={(e) => {
-                  const target = e.target as HTMLImageElement;
-                  target.src = getProxiedImageUrl(`https://picsum.photos/800/400?random=${Date.now()}`);
-                }}
               />
             </div>
             {/* Gradient Overlays for Text Readability */}
@@ -86,7 +175,7 @@ export function PdfPreview({ data, onImagesLoaded }: PdfPreviewProps) {
               {data.destination && (
                 <div className="flex items-center gap-1 drop-shadow-sm">
                   <MapPin className="w-5 h-5" />
-                  <span className="font-medium">{data.destination}</span>
+                  <span className="font-medium">{formatDestination(data.destination)}</span>
                 </div>
               )}
               {data.duration && (
@@ -160,29 +249,72 @@ export function PdfPreview({ data, onImagesLoaded }: PdfPreviewProps) {
                 <div className="w-1 h-6 bg-green-600 rounded" />
                 Accommodations
               </h3>
-              <div className="space-y-4 pl-4">
-                {data.hotels.slice(0, 3).map((hotel, index) => (
-                  <div key={index} className="bg-gray-50 rounded-xl p-4 border border-gray-200">
-                    <div className="h-24 bg-gray-200 rounded-lg mb-3 overflow-hidden">
-                      <img 
-                        src={getProxiedImageUrl(previewImages.hotels[index] || `https://picsum.photos/400/150?random=${2000 + index}`)}
+              <div className="space-y-4">
+                {data.hotels.map((hotel, index) => (
+                  <div key={index} className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+                    {/* Hotel Image - Full Width */}
+                    <div className="h-48 bg-gray-200 overflow-hidden">
+                      <LazyImage 
+                        src={hotel.image || previewImages.hotels[index] || `https://picsum.photos/400/300?random=${2000 + index}`}
                         alt={hotel.name}
                         className="w-full h-full object-cover"
-                        onError={(e) => {
-                          const target = e.target as HTMLImageElement;
-                          target.src = getProxiedImageUrl(`https://picsum.photos/400/150?random=${Date.now() + index}`);
-                        }}
+                        index={index}
                       />
                     </div>
-                    <div className="text-base font-medium text-gray-900">{hotel.name}</div>
-                    <div className="text-sm text-gray-600 mt-1">Premium accommodation</div>
+                    
+                    {/* Hotel Details */}
+                    <div className="p-4 space-y-2">
+                      {/* Nights and City info */}
+                      {(hotel.nights || hotel.city) && (
+                        <div className="text-xs font-bold text-purple-600 uppercase tracking-wide">
+                          {hotel.nights && `${hotel.nights} NIGHTS STAY`}
+                          {hotel.nights && hotel.city && " IN "}
+                          {hotel.city && `${hotel.city.toUpperCase()}`}
+                        </div>
+                      )}
+                      
+                      {/* Hotel Name */}
+                      <h4 className="text-lg font-semibold text-gray-900">{hotel.name}</h4>
+                      
+                      {/* Rating Display */}
+                      {hotel.rating && (
+                        <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-1">
+                            {[...Array(5)].map((_, i) => {
+                              const isFilled = i < Math.floor(hotel.rating!);
+                              const isHalf = i === Math.floor(hotel.rating!) && hotel.rating! % 1 >= 0.5;
+                              return (
+                                <Star 
+                                  key={i} 
+                                  className={`w-4 h-4 ${
+                                    isFilled || isHalf 
+                                      ? 'text-yellow-400 fill-current' 
+                                      : 'text-gray-300'
+                                  }`}
+                                />
+                              );
+                            })}
+                          </div>
+                          <span className="text-sm text-gray-600">{hotel.rating.toFixed(1)}</span>
+                          <Badge className={`ml-2 ${getRatingBadgeStyle(hotel.rating)}`}>
+                            {getRatingLabel(hotel.rating)}
+                          </Badge>
+                        </div>
+                      )}
+                      
+                      {/* Reviews Section */}
+                      <div className="space-y-1">
+                        <div className="text-sm font-semibold text-gray-600">Reviews</div>
+                        <div className="text-sm text-gray-600 leading-relaxed">
+                          {hotel.phrases && hotel.phrases.length > 0 
+                            ? hotel.phrases.join(', ')
+                            : 'Premium accommodation with excellent amenities'
+                          }
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 ))}
-                {data.hotels.length > 3 && (
-                  <div className="text-sm text-gray-500 pl-4 italic">
-                    + {data.hotels.length - 3} more accommodations included
-                  </div>
-                )}
               </div>
             </div>
           )}

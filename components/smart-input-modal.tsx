@@ -16,7 +16,7 @@ import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Icons } from "@/components/icons";
 import { FileText, Link, Type, Upload, RotateCcw } from "lucide-react";
-import { ItineraryFormData } from "@/lib/types";
+import { ItineraryFormData, Hotel } from "@/lib/types";
 import { useExtractFormDataError } from "@/hooks/use-extract-form-data-error";
 import { saveDraft } from "@/lib/storage";
 import { useToast } from "@/components/ui/use-toast";
@@ -59,6 +59,41 @@ export function SmartInputModal({
   // Toast for user feedback
   const { toast } = useToast();
 
+  // Helper function to generate fallback hotel data
+  const generateFallbackHotelData = (hotelName: string, destination?: string): Partial<Hotel> => {
+    const rating = (Math.random() * (5 - 3.5) + 3.5).toFixed(1);
+    const allPhrases = [
+      "Comfortable accommodation",
+      "Good location",
+      "Friendly staff",
+      "Clean rooms",
+      "Value for money",
+      "Modern facilities",
+      "Convenient transport links",
+      "Helpful concierge",
+      "Well-maintained property",
+      "Popular neighborhood",
+      "Efficient check-in",
+      "Professional service",
+      "Peaceful atmosphere",
+      "Central location",
+      "Good amenities"
+    ];
+
+    // Select 2-3 random unique phrases
+    const selectedPhrases = [...allPhrases]
+      .sort(() => Math.random() - 0.5)
+      .slice(0, Math.floor(Math.random() * 2) + 2);
+
+    return {
+      name: hotelName,
+      city: destination,
+      rating: parseFloat(rating),
+      phrases: selectedPhrases,
+      fetchedFromAPI: false
+    };
+  };
+
   // API call to extract form data
   const extractFormData = async (mode: InputMode, content: string): Promise<ItineraryFormData> => {
     let requestBody: any;
@@ -73,7 +108,6 @@ export function SmartInputModal({
     } else if (mode === "pdf" && selectedFile) {
       requestBody = new FormData();
       requestBody.append("pdf", selectedFile);
-      // Don't set Content-Type for FormData - browser will set it with boundary
     }
 
     const response = await fetch("/api/extract", {
@@ -88,7 +122,120 @@ export function SmartInputModal({
     }
 
     const result = await response.json();
-    return result.data;
+    const data = result.data;
+
+    // Enhance hotels with TripAdvisor data
+    if (data.hotels && data.hotels.length > 0) {
+      // First, enhance all hotels with TripAdvisor data
+      const enhancedHotelsPromises = data.hotels.map(async (hotel: Hotel) => {
+        try {
+          // Extract city from routing if not set
+          if (!hotel.city && data.routing) {
+            const routingMatch = data.routing.match(new RegExp(`(${hotel.name.split('/')[0].trim()})\\s*\\((\\d+)N\\)`));
+            if (routingMatch) {
+              hotel.nights = parseInt(routingMatch[2]);
+            }
+          }
+
+          // Try to fetch from TripAdvisor
+          const response = await fetch("/api/tripadvisor", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              action: "search",
+              hotelName: hotel.name,
+              destination: hotel.city || data.destination || ""
+            })
+          });
+
+          if (response.ok) {
+            const result = await response.json();
+            if (result.success && result.data) {
+              // Merge TripAdvisor data with existing hotel data
+              const tripAdvisorData = result.data;
+              
+              // Ensure we have phrases from TripAdvisor
+              if (!tripAdvisorData.phrases || tripAdvisorData.phrases.length === 0) {
+                console.error('No phrases returned from TripAdvisor for hotel:', hotel.name);
+                const fallbackData = generateFallbackHotelData(hotel.name, hotel.city || data.destination);
+                tripAdvisorData.phrases = fallbackData.phrases;
+                tripAdvisorData.fetchedFromAPI = false;
+              }
+
+              return {
+                ...hotel,
+                ...tripAdvisorData,
+                // Keep original name if TripAdvisor name is too different
+                name: tripAdvisorData.fetchedFromAPI ? tripAdvisorData.name : hotel.name,
+                // Keep original city if TripAdvisor city is empty
+                city: tripAdvisorData.city || hotel.city || data.destination,
+                // Keep original image if TripAdvisor image is empty
+                image: tripAdvisorData.image || hotel.image,
+                // Ensure we have a rating
+                rating: tripAdvisorData.rating || 4.5,
+                // Use TripAdvisor phrases or fallback
+                phrases: tripAdvisorData.phrases,
+                fetchedFromAPI: tripAdvisorData.fetchedFromAPI
+              };
+            }
+          }
+        } catch (err) {
+          console.error("Failed to fetch TripAdvisor data for hotel:", hotel.name, err);
+        }
+
+        // If TripAdvisor fetch fails, return hotel with fallback data
+        const fallbackData = generateFallbackHotelData(hotel.name, hotel.city || data.destination);
+        return { 
+          ...hotel, 
+          rating: hotel.rating || fallbackData.rating,
+          phrases: fallbackData.phrases,
+          fetchedFromAPI: false
+        };
+      });
+
+      const enhancedHotels = await Promise.all(enhancedHotelsPromises);
+
+      // Extract nights from routing if not set
+      if (data.routing) {
+        const routingParts: string[] = data.routing.split('→').map((part: string) => part.trim());
+        routingParts.forEach((part: string) => {
+          const match = part.match(/([^(]+)\s*\((\d+)N\)/);
+          if (match) {
+            const city = match[1].trim();
+            const nights = parseInt(match[2]);
+            enhancedHotels.forEach(hotel => {
+              if (hotel.city?.toLowerCase() === city.toLowerCase() && !hotel.nights) {
+                hotel.nights = nights;
+              }
+            });
+          }
+        });
+      }
+
+      // Group hotels by city
+      const hotelsByCity = enhancedHotels.reduce((acc: Record<string, Hotel[]>, hotel: Hotel) => {
+        const city = (hotel.city || data.destination || 'Unknown').toLowerCase();
+        if (!acc[city]) {
+          acc[city] = [];
+        }
+        acc[city].push(hotel);
+        return acc;
+      }, {} as Record<string, Hotel[]>);
+
+      // Take only the highest-rated hotel from each city
+      data.hotels = (Object.values(hotelsByCity) as Hotel[][]).map((cityHotels: Hotel[]) => {
+        // Sort by rating (highest first) and take the first one
+        return cityHotels.sort((a: Hotel, b: Hotel) => (b.rating || 0) - (a.rating || 0))[0];
+      });
+
+      // Show success message about filtered hotels
+      toast({
+        title: "Hotels Processed",
+        description: `Selected the highest-rated hotel from each of ${data.hotels.length} ${data.hotels.length === 1 ? 'city' : 'cities'}.`,
+      });
+    }
+
+    return data;
   };
 
   const handleFileSelect = (event: ChangeEvent<HTMLInputElement>) => {

@@ -21,10 +21,15 @@ const PracticalInfoSchema = z.object({
   otherInclusions: z.array(InclusionSchema).optional(),
 });
 
-// Schema for hotels with images
+// Schema for hotels with images, rating, and reviews
 const HotelSchema = z.object({
   name: z.string(),
+  city: z.string().optional(),
+  nights: z.number().min(1).max(30).optional(),
   image: z.string().optional(),
+  rating: z.number().min(0).max(5).optional(),
+  phrases: z.array(z.string()).optional(),
+  fetchedFromAPI: z.boolean().optional(),
 });
 
 // Schema for experiences with images

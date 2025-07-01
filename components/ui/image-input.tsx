@@ -43,7 +43,10 @@ export function ImageInput({
       const data = await response.json();
       
       if (data.imageUrl) {
-        setApiImageUrl(data.imageUrl);
+        // Ensure consistent image URL format
+        const imageUrl = data.imageUrl.startsWith('data:') ? data.imageUrl 
+          : `https://images.weserv.nl/?url=${encodeURIComponent(data.imageUrl)}&w=800&output=jpg&q=75`;
+        setApiImageUrl(imageUrl);
       } else {
         // Fallback to a reliable placeholder service
         setApiImageUrl(`https://picsum.photos/800/600?random=${Date.now()}`);
@@ -67,6 +70,22 @@ export function ImageInput({
   // Use user image if available, otherwise use API-fetched image
   const currentImageUrl = value || apiImageUrl;
 
+  // Format image URL consistently
+  function getProxiedImageUrl(url: string) {
+    if (!url) return '';
+    if (url.startsWith('data:')) return url;
+    if (url.includes('images.weserv.nl')) return url;
+
+    // Handle both http and https URLs
+    if (/^https?:\/\//i.test(url)) {
+      // Add cache-busting parameter and ensure consistent dimensions
+      return `https://images.weserv.nl/?url=${encodeURIComponent(url)}&w=800&h=600&fit=cover&output=jpg&q=75&n=${Date.now()}`;
+    }
+    
+    // Handle relative URLs or other formats
+    return `https://picsum.photos/800/600?random=${Date.now()}`;
+  }
+
   const handleFileSelect = (file: File) => {
     if (!file.type.startsWith('image/')) {
       alert('Please select an image file');
@@ -79,6 +98,7 @@ export function ImageInput({
     const reader = new FileReader();
     reader.onload = (e) => {
       const result = e.target?.result as string;
+      // Pass the data URL directly without any transformation
       onChange(result);
       setIsLoading(false);
     };
@@ -152,10 +172,14 @@ export function ImageInput({
           {currentImageUrl ? (
             <>
               <img
-                src={currentImageUrl}
+                src={getProxiedImageUrl(currentImageUrl)}
                 alt={placeholder}
                 className="w-full h-full object-cover"
                 loading="lazy"
+                onError={(e) => {
+                  const target = e.target as HTMLImageElement;
+                  target.src = `https://picsum.photos/800/600?random=${Date.now()}`;
+                }}
               />
               {value && (
                 <Button
@@ -226,14 +250,8 @@ export function ImageInput({
           className="w-full"
         >
           <Upload className="h-4 w-4 mr-2" />
-          {value ? "Change Image" : "Upload Image"}
+          Upload
         </Button>
-      )}
-
-      {!value && !compact && (
-        <p className="text-xs text-muted-foreground text-center">
-          Using Unsplash image for keywords: &quot;{keywords}&quot;
-        </p>
       )}
     </div>
   );

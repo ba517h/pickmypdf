@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { ItineraryFormData } from '@/lib/types';
 
 export interface PreviewImages {
@@ -8,6 +8,9 @@ export interface PreviewImages {
   days: string[];
   cities: string[];
 }
+
+// Cache for image URLs
+const imageCache = new Map<string, string>();
 
 export function usePreviewImages(data: ItineraryFormData) {
   const [previewImages, setPreviewImages] = useState<PreviewImages>({
@@ -19,16 +22,38 @@ export function usePreviewImages(data: ItineraryFormData) {
   });
 
   const [isLoading, setIsLoading] = useState(false);
+  const abortControllerRef = useRef<AbortController | null>(null);
 
-  // Function to get or generate image for preview
+  // Clear cache when data changes significantly
+  useEffect(() => {
+    imageCache.clear();
+  }, [data.mainImage, data.hotels.map(h => h.image).join(','), data.experiences.map(e => e.image).join(','), data.dayWiseItinerary.map(d => d.image).join(','), data.cityImages?.map(c => c.image).join(',')]);
+
+  // Function to get or generate image for preview with caching
   const getPreviewImage = async (keywords: string, type: 'main' | 'hotel' | 'experience' | 'day' | 'city', index: number = 0): Promise<string> => {
+    // Check cache first
+    const cacheKey = `${keywords}-${type}-${index}`;
+    if (imageCache.has(cacheKey)) {
+      return imageCache.get(cacheKey)!;
+    }
+
     try {
-      const response = await fetch(`/api/images?q=${encodeURIComponent(keywords)}&type=single`);
+      const response = await fetch(`/api/images?q=${encodeURIComponent(keywords)}&type=single`, {
+        signal: abortControllerRef.current?.signal
+      });
       const imageData = await response.json();
       if (imageData.imageUrl) {
-        return imageData.imageUrl;
+        // Transform non-data URLs
+        const imageUrl = imageData.imageUrl.startsWith('data:') ? imageData.imageUrl 
+          : `https://images.weserv.nl/?url=${encodeURIComponent(imageData.imageUrl)}&w=800&output=jpg&q=75&n=1`;
+        // Cache the result
+        imageCache.set(cacheKey, imageUrl);
+        return imageUrl;
       }
     } catch (error) {
+      if ((error as Error).name === 'AbortError') {
+        throw error;
+      }
       console.log('Failed to fetch image, using fallback');
     }
     
@@ -40,7 +65,9 @@ export function usePreviewImages(data: ItineraryFormData) {
       day: 4000,
       city: 5000
     };
-    return `https://picsum.photos/600/400?random=${baseRandoms[type] + index}`;
+    const fallbackUrl = `https://picsum.photos/800/600?random=${baseRandoms[type] + index}`;
+    imageCache.set(cacheKey, fallbackUrl);
+    return fallbackUrl;
   };
 
   // Load images for preview
@@ -49,6 +76,12 @@ export function usePreviewImages(data: ItineraryFormData) {
       if (!data.destination && data.hotels.length === 0 && data.experiences.length === 0 && data.dayWiseItinerary.length === 0) {
         return;
       }
+
+      // Cancel any ongoing requests
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+      abortControllerRef.current = new AbortController();
 
       setIsLoading(true);
       
@@ -61,66 +94,102 @@ export function usePreviewImages(data: ItineraryFormData) {
       };
 
       try {
-        // Main image - prioritize form data
-        if (data.mainImage) {
-          newImages.main = data.mainImage;
-        } else if (data.cityImages && data.cityImages.length > 0 && data.cityImages[0].image) {
-          newImages.main = data.cityImages[0].image;
-        } else if (data.destination) {
-          newImages.main = await getPreviewImage(`${data.destination} landscape destination`, 'main');
+        // Load all images in parallel
+        const promises: Promise<void>[] = [];
+
+        // Main image promise
+        if (!data.mainImage && !data.cityImages?.[0]?.image && data.destination) {
+          promises.push(
+            getPreviewImage(`${data.destination} landscape destination`, 'main')
+              .then(url => { newImages.main = url; })
+          );
+        } else {
+          // Transform non-data URLs
+          const mainImage = data.mainImage || data.cityImages?.[0]?.image || "";
+          newImages.main = mainImage.startsWith('data:') ? mainImage 
+            : mainImage ? `https://images.weserv.nl/?url=${encodeURIComponent(mainImage)}&w=800&output=jpg&q=75&n=1` : "";
         }
 
-        // Hotel images
-        const hotelPromises = data.hotels.map(async (hotel, index) => {
+        // Hotel images promises
+        data.hotels.forEach((hotel, index) => {
           if (hotel.image) {
-            return hotel.image;
+            // Transform non-data URLs
+            newImages.hotels[index] = hotel.image.startsWith('data:') ? hotel.image 
+              : `https://images.weserv.nl/?url=${encodeURIComponent(hotel.image)}&w=800&output=jpg&q=75&n=1`;
+          } else {
+            const keywords = `${hotel.name} ${data.destination || 'luxury'} hotel accommodation`;
+            promises.push(
+              getPreviewImage(keywords, 'hotel', index)
+                .then(url => { newImages.hotels[index] = url; })
+            );
           }
-          const keywords = `${hotel.name} ${data.destination || 'luxury'} hotel accommodation`;
-          return await getPreviewImage(keywords, 'hotel', index);
         });
-        newImages.hotels = await Promise.all(hotelPromises);
 
-        // Experience images  
-        const experiencePromises = data.experiences.map(async (experience, index) => {
+        // Experience images promises
+        data.experiences.forEach((experience, index) => {
           if (experience.image) {
-            return experience.image;
+            // Transform non-data URLs
+            newImages.experiences[index] = experience.image.startsWith('data:') ? experience.image 
+              : `https://images.weserv.nl/?url=${encodeURIComponent(experience.image)}&w=800&output=jpg&q=75&n=1`;
+          } else {
+            const keywords = `${experience.name} ${data.destination || 'travel'} activity experience`;
+            promises.push(
+              getPreviewImage(keywords, 'experience', index)
+                .then(url => { newImages.experiences[index] = url; })
+            );
           }
-          const keywords = `${experience.name} ${data.destination || 'travel'} activity experience`;
-          return await getPreviewImage(keywords, 'experience', index);
         });
-        newImages.experiences = await Promise.all(experiencePromises);
 
-        // Day images
-        const dayPromises = data.dayWiseItinerary.map(async (day, index) => {
+        // Day images promises
+        data.dayWiseItinerary.forEach((day, index) => {
           if (day.image) {
-            return day.image;
+            // Transform non-data URLs
+            newImages.days[index] = day.image.startsWith('data:') ? day.image 
+              : `https://images.weserv.nl/?url=${encodeURIComponent(day.image)}&w=800&output=jpg&q=75&n=1`;
+          } else {
+            const keywords = `${day.title} ${data.destination || 'travel'} tour activity`;
+            promises.push(
+              getPreviewImage(keywords, 'day', index)
+                .then(url => { newImages.days[index] = url; })
+            );
           }
-          const keywords = `${day.title} ${data.destination || 'travel'} tour activity`;
-          return await getPreviewImage(keywords, 'day', index);
         });
-        newImages.days = await Promise.all(dayPromises);
 
-        // City images
-        if (data.cityImages && data.cityImages.length > 0) {
-          const cityPromises = data.cityImages.map(async (cityImage, index) => {
-            if (cityImage.image) {
-              return cityImage.image;
-            }
+        // City images promises
+        data.cityImages?.forEach((cityImage, index) => {
+          if (cityImage.image) {
+            // Transform non-data URLs
+            newImages.cities[index] = cityImage.image.startsWith('data:') ? cityImage.image 
+              : `https://images.weserv.nl/?url=${encodeURIComponent(cityImage.image)}&w=800&output=jpg&q=75&n=1`;
+          } else {
             const keywords = `${cityImage.city} ${data.destination || 'city'} landmark skyline`;
-            return await getPreviewImage(keywords, 'city', index);
-          });
-          newImages.cities = await Promise.all(cityPromises);
-        }
+            promises.push(
+              getPreviewImage(keywords, 'city', index)
+                .then(url => { newImages.cities[index] = url; })
+            );
+          }
+        });
 
+        // Wait for all images to load in parallel
+        await Promise.all(promises);
         setPreviewImages(newImages);
       } catch (error) {
-        console.error('Error loading preview images:', error);
+        if ((error as Error).name !== 'AbortError') {
+          console.error('Error loading preview images:', error);
+        }
       } finally {
         setIsLoading(false);
       }
     };
 
     loadPreviewImages();
+
+    // Cleanup function to abort any pending requests
+    return () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+    };
   }, [data]);
 
   return {

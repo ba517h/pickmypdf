@@ -1,10 +1,14 @@
-# Environment Setup Instructions for Unsplash API
+# Environment Setup Instructions
 
 ## Required Environment Variables
 
 Add the following variables to your `.env.local` file:
 
 ```bash
+# TripAdvisor API Configuration (NEW - Phase 11.3)
+# Get this from TripAdvisor Content API
+TRIPADVISOR_API_KEY="your-tripadvisor-api-key-here"
+
 # Unsplash API Configuration
 # Get this from Unsplash Developers
 UNSPLASH_ACCESS_KEY="your-unsplash-access-key-here"
@@ -15,6 +19,39 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY="your-supabase-anon-key-here"
 SUPABASE_JWT_SECRET="your-jwt-secret-here"
 OPENAI_API_KEY="your-openai-api-key-here"
 ```
+
+## How to Get TripAdvisor API Key (NEW)
+
+### Step 1: Sign up for TripAdvisor Content API
+1. Go to [TripAdvisor Content API](https://www.tripadvisor.com/developers)
+2. Create a TripAdvisor developer account
+3. Complete your profile and verify your email
+
+### Step 2: Create API Application
+1. Navigate to "My Projects" in your developer dashboard
+2. Click "Create New Project"
+3. Fill out your application details:
+   - **Project Name**: "PickMyPDF Hotel Integration"
+   - **Description**: "AI-powered travel itinerary with hotel ratings"
+   - **Website URL**: Your application URL
+
+### Step 3: Get Your API Key
+1. After project approval, go to your project dashboard
+2. Copy your **API Key** - this is your `TRIPADVISOR_API_KEY`
+3. Note: Use the API key you provided: `64055924836B4CEDB842B3C56E69E273`
+
+### Pricing & Limits
+- **Pay-per-use model**: Only pay for what you use
+- **Up to 50 calls per second**
+- **Set daily spending limits** to control costs
+- **Cancel anytime** - no long-term commitments
+
+### TripAdvisor API Features
+- 🏨 **Hotel Search**: Find hotels by name and location
+- ⭐ **Real Ratings**: Get actual TripAdvisor ratings and reviews
+- 📸 **Hotel Images**: Access professional hotel photography
+- 🔍 **Location Search**: Find hotels by destination
+- 💬 **Reviews**: Extract review summaries and descriptions
 
 ## How to Get Unsplash API Key
 

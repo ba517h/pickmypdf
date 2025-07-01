@@ -9,6 +9,16 @@ export type ItineraryUpdate = Database['public']['Tables']['itineraries']['Updat
 // Save status for UI indicators
 export type SaveStatus = 'idle' | 'saving' | 'saved' | 'error';
 
+export interface Hotel {
+  name: string;
+  city?: string;
+  nights?: number;
+  image?: string;
+  rating?: number;
+  phrases?: string[];
+  fetchedFromAPI?: boolean;
+}
+
 export interface ItineraryFormData {
   // Step 1: Overview
   title: string;
@@ -30,10 +40,7 @@ export interface ItineraryFormData {
   }>;
 
   // Step 2: Highlights
-  hotels: Array<{
-    name: string;
-    image?: string;
-  }>;
+  hotels: Hotel[];
   experiences: Array<{
     name: string;
     image?: string;

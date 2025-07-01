@@ -10,7 +10,7 @@ interface ItineraryFormData {
   tripType: string;
   mainImage?: string;
   cityImages?: Array<{ city: string; image?: string; }>;
-  hotels: Array<{ name: string; image?: string; }>;
+  hotels: Array<{ name: string; city?: string; nights?: number; image?: string; rating?: number; phrases?: string[]; fetchedFromAPI?: boolean; }>;
   experiences: Array<{ name: string; image?: string; }>;
   practicalInfo: {
     visa: string;
@@ -37,6 +37,13 @@ interface ItineraryFormData {
 }
 
 Use your best judgment to populate all fields from the input. Leave fields blank if information is missing. Don't hallucinate.
+
+CRITICAL HOTEL EXTRACTION RULES:
+1. When multiple hotels are listed per city (e.g., "City: Hotel1 / Hotel2 / Hotel3"), extract ALL hotels
+2. Set the correct city for each hotel from the context
+3. Set nights for each hotel based on the routing information (e.g., "City (2N)" means 2 nights)
+4. For hotels separated by "/" or "," or "or", create separate hotel objects
+5. Look for hotel sections, routing sections, and day-wise sections to gather hotel information
 
 ✅ Output only a compact JSON object matching the schema above.
 ✅ Do not include explanations, comments, or repeat the input content.
